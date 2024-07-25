@@ -27,7 +27,7 @@ class Logger:
     @staticmethod
     def error(text):
         Logger.ensure_log_file()
-        # logger.error(text)
+        logger.error(text)
         # with open(LOG_FILE_PATH, 'a') as file:
         #     log_entry = "[{}] [{}] {}\n".format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "ERROR", text)
         #     file.write(log_entry)
@@ -35,7 +35,7 @@ class Logger:
     @staticmethod    
     def info(text):
         Logger.ensure_log_file()
-        # logger.info(text)
+        logger.info(text)
         # with open(LOG_FILE_PATH, 'a') as file:
         #     log_entry = "[{}] [{}] {}\n".format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "INFO", text)
         #     file.write(log_entry)
@@ -43,14 +43,14 @@ class Logger:
     @staticmethod    
     def debug(text):
         Logger.ensure_log_file()
-        # logger.debug(text)
+        logger.debug(text)
         
     @staticmethod    
     def success(text):
         Logger.ensure_log_file()
-        # logger.success(text)
+        logger.success(text)
         
     @staticmethod    
     def warning(text):
         Logger.ensure_log_file()
-        # logger.warning(text)
+        logger.warning(text)
