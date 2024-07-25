@@ -4,7 +4,8 @@ from config import Config
 
 # db = None
 # cursorDb = None
-Router = Blueprint('Router', __name__, url_prefix='/v1')
+Router = Blueprint('Router', __name__)
+# Router = Blueprint('Router', __name__, url_prefix='/v1')
 
 def createDbConnection():
     # global db, cursorDb

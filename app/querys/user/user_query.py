@@ -43,6 +43,10 @@ def GetProfilePicture(userId: int):
     Logger.debug(f"Generating SQL query to get profile picture with userId {userId}")
     return f"select * from Profiles_M where UserId = {userId}"
 
+def GetProfilePictureById(userId: int):
+    Logger.debug(f"Generating SQL query to get profile picture with Id {userId}")
+    return f"select * from Profiles_M where Id = {userId}"
+
 def GetMatchMakingCompleteNotification(profileId: int):
     Logger.debug(f"Generating SQL query to check matchmaking completion notification with profileId {profileId}")
     return f"select * from MatrimonialProfile_M where ProfileId = {profileId} and matching_flag = 1"

@@ -42,7 +42,7 @@ class Logger:
     @staticmethod    
     def debug(text):
         Logger.ensure_log_file()
-        logger.debug(text)
+        # logger.debug(text)
         
     @staticmethod    
     def success(text):

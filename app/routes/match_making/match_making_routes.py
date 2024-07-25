@@ -14,6 +14,7 @@ from app.extentions.multiprocess import MultiProcess
 from app.services.match_making_service import MatchMakingService
 from app.services.mapping_match_making_service import MappingMatchMakingService
 from datetime import datetime
+import traceback
 
 @Router.route('/matchmaking', methods=['GET'])
 @cross_origin(supports_credentials=True)
@@ -190,27 +191,42 @@ def match_making_result():
         Logger.debug(f"Executed database query to check matchmaking status for profileId: {mainProfileId}")
         user_exists = cursorDb.fetchall()
         Logger.debug(f"Database query result: {len(user_exists)}")
-        
         if len(user_exists) == 0:
             return json.dumps({"status": "success", "message": "Matchmaking is Inprogress.", 'user_details': user_match_making_results}), 200
         
         cursorDb.execute(querys.GetMatchedProfiles(mainProfileId))
         matched_profiles = cursorDb.fetchall()
-        for profile in matched_profiles:
+        print(matched_profiles)
+        Logger.debug(f"Database query result for matched profiles: {len(matched_profiles)}")
+        for match_profile in matched_profiles:
+            upload_folder = Config.PROFILE_PIC_PATH
             try:
-                otherProfileId = profile["ProfileId"]
+                otherProfileId = match_profile["OtherProfileId"]
+                cursorDb.execute(querys.GetMatrimonialData(profileId=otherProfileId))
+                profile = cursorDb.fetchone()
+                
+                if profile == None:
+                    Logger.info(f"Profile not found for profileId: {otherProfileId}")
+                    continue
+                
+                print("PROFILEDIEDFDFDJ:LJSDLKFJKSDLJFLKSF:", profile, otherProfileId)
+                Logger.debug(f"Database query result Matrimonial: {len(profile)}")
+                
                 name = profile["Name"]
                 dob = profile["Dob"]
                 city = profile["City"]
                 state = profile["State"]
                 height = profile["HeightCM"]
                 
+                if int(height) < 50:
+                    height = 165
+                
                 dob_datetime = datetime.strptime(dob, '%Y-%m-%d')
                 age = calculate_age(dob_datetime)
                 
                 height = str(cm_to_feet(height))
                 height_ft = height.split(".")[0]+ " Ft"
-                height_inches = height.split(".")[1][:1]+ " Inches"
+                height_inches = height.split(".")[1][:1]+ " Inches" 
                 final_height = height_ft + " "+ height_inches
                 
                 location = city+ ", "+ state
@@ -222,11 +238,49 @@ def match_making_result():
                 match_making_result["height"] = final_height
                 match_making_result["location"] = location
                 
-                user_match_making_results.append(match_making_result)
+                # fetch profile picure
+                cursorDb.execute(querys.GetProfilePictureById(otherProfileId))
+                profile_picture_data = cursorDb.fetchone()
+                if profile_picture_data == None:
+                    Logger.debug(f"Profile Picture data: {profile_picture_data}")
+                    match_making_result["picture"] = None
+                    
+                else:
+                    requestFileName = profile_picture_data["ProfilePicture"]
+                    Logger.debug(f"Fetched profile picture filename: {requestFileName}")
+                    profile_path = os.path.join(upload_folder, requestFileName)
+                    
+                    if not os.path.exists(profile_path):
+                        Logger.warning(f"Profile Picture not found for user ID: {otherProfileId}")
+                        match_making_result["picture"] = None
+                                
+                    db.commit()
+                    
+                    try:
+                        with open(profile_path, 'rb') as file:
+                            # Read the file content and convert it into a byte array
+                            file_content = file.read()
+                            byte_array = bytearray(file_content)
+                            byte_array_list = list(byte_array)
+                            match_making_result["picture"] = byte_array_list
+                            match_making_result["filename"] = requestFileName
+                            
+                    except FileNotFoundError:
+                        Logger.error("Image not found error")
+                        match_making_result["picture"] = None
+                
             except Exception as e:
+                tb = traceback.extract_tb(e.__traceback__)
+                filename, line_number, func_name, text = tb[-1]
+                    
+                traceback.print_exc()
+                print(tb)
+                db.rollback()
                 Logger.error(f"Error occurred while filling object for match making: {e}")
-                match_making_result["Error"] = f"Some error occurs for key: {profile.keys()}"
+                match_making_result["Error"] = f"Some error occurs for key: {e}"
         
+            user_match_making_results.append(match_making_result)
+            
         return json.dumps({'status': 'success', 'message': 'Matchmaking is Completed.', 'user_details': user_match_making_results}), 200
     
     except mysql.connector.Error as e:
