@@ -166,6 +166,91 @@ def match_making_status():
         Logger.info("Closing database connection")
 
 
+@Router.route('/match-making-result', methods=['GET'])
+@cross_origin(supports_credentials=True)
+def match_making_result():
+    
+    user_match_making_results = []
+    match_making_result = {}
+    try:
+        Logger.info("Starting match_making_status function")
+        mainProfileId :int = 0
+        try:
+            mainProfileId = int(request.args["profileId"])
+        except Exception as e:
+            Logger.error(f"Error occurred while parsing profileId: {e}")
+            mainProfileId = 0
+        
+        if mainProfileId == 0:
+            Logger.warning("Profile ID not provided or invalid")
+            return jsonify({"status": "failed", "message": "Profile ID not provided"}), 400
+        db, cursorDb = createDbConnection()
+        Logger.debug("Database connection established")
+        cursorDb.execute(querys.GetMatchMakingCompleteNotification(profileId=mainProfileId))
+        Logger.debug(f"Executed database query to check matchmaking status for profileId: {mainProfileId}")
+        user_exists = cursorDb.fetchall()
+        Logger.debug(f"Database query result: {len(user_exists)}")
+        
+        if len(user_exists) == 0:
+            return json.dumps({"status": "success", "message": "Matchmaking is Inprogress.", 'user_details': user_match_making_results}), 200
+        
+        cursorDb.execute(querys.GetMatchedProfiles(mainProfileId))
+        matched_profiles = cursorDb.fetchall()
+        for profile in matched_profiles:
+            try:
+                otherProfileId = profile["ProfileId"]
+                name = profile["Name"]
+                dob = profile["Dob"]
+                city = profile["City"]
+                state = profile["State"]
+                height = profile["HeightCM"]
+                
+                dob_datetime = datetime.strptime(dob, '%Y-%m-%d')
+                age = calculate_age(dob_datetime)
+                
+                height = str(cm_to_feet(height))
+                height_ft = height.split(".")[0]+ " Ft"
+                height_inches = height.split(".")[1][:1]+ " Inches"
+                final_height = height_ft + " "+ height_inches
+                
+                location = city+ ", "+ state
+                
+                # filling dictionary for result
+                match_making_result["profileId"] = otherProfileId
+                match_making_result["name"] = name
+                match_making_result["age"] = age
+                match_making_result["height"] = final_height
+                match_making_result["location"] = location
+                
+                user_match_making_results.append(match_making_result)
+            except Exception as e:
+                Logger.error(f"Error occurred while filling object for match making: {e}")
+                match_making_result["Error"] = f"Some error occurs for key: {profile.keys()}"
+        
+        return json.dumps({'status': 'success', 'message': 'Matchmaking is Completed.', 'user_details': user_match_making_results}), 200
+    
+    except mysql.connector.Error as e:
+        Logger.error(f"MySQL Database Error: {e}")
+        return json.dumps({"status": "failed", 'message': "some error occurs, in query execution"}), 400
+    except json.JSONDecodeError as jd:
+        Logger.error(f"JSON Decode Error: {jd}")
+        db.rollback()
+        return json.dumps({"status": "failed", 'message': "Invalid data format of json"}), 400
+    
+    except ValueError as ve:
+        Logger.error(f"Value Error: {ve}")
+        db.rollback()
+        return json.dumps({"status": "failed", 'message': "Invalid data format"}), 400
+
+    except Exception as e:
+        Logger.error(f"Unexpected Error: {e}")
+        db.rollback()
+        return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
+    finally:
+        closeDbConnection(db, cursorDb)
+        Logger.info("Closing database connection")
+
+
 # @Router.route('/astro', methods=['GET'])
 # @cross_origin(supports_credentials=True)
 # def astro():

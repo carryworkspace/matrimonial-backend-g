@@ -10,6 +10,7 @@ import os
 from .pdf_extractor import PdfExtracter
 from .chatgpt import Chatgpt
 from app.extentions.logger import Logger 
+import socket
 
 users_otp = {}
 query_payload = payload = {
@@ -387,3 +388,19 @@ def calculate_age(birth_date):
 
 def cm_to_feet(feet):
     return float(feet / 30.48)
+
+def detect_environment():
+    # Get the remote IP address of the client making the request
+    ip_addresses = socket.gethostbyname_ex(socket.gethostname())[2]
+    for ip in ip_addresses:
+        if ip.startswith('192.168.') or ip.startswith('10.') or ip.startswith('172.'):
+            return 'local'
+    return "server"
+    
+    # Check if the remote IP is localhost or a private IP range (indicating local machine)
+    # if remote_ip in ['127.0.0.1', '::1'] or remote_ip.startswith('192.168.') or remote_ip.startswith('10.') or remote_ip.startswith('172.'):
+    #     return 'local'
+    # else:
+    #     return 'server'
+    
+print(detect_environment())
