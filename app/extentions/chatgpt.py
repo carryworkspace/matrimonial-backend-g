@@ -1,0 +1,196 @@
+import openai
+import time
+import asyncio
+from openai import OpenAI
+from config import Config
+from app.extentions.pdf_extractor import PdfExtracter
+from app.extentions.logger import Logger 
+
+
+class Chatgpt:
+    def __init__(self):
+        self.client = OpenAI(api_key=Config.CHAT_GPT_API_KEY)
+
+
+    def chat(self,text, payload):
+        
+        msg = f"please read this text {text} and fill the provided json payload : {payload} and correct the formatting of dob - yyyy-MM-dd and height in cm from fts and time in 24 hours format and fill subcaste withh help of name and please fill gender using name only and please fill the state city country and address and mobile or phone number mandatory and fill all fields of the payload json return json content only"
+        Logger.info("Chatgpt Requesting your message..... waiting for response")
+        response = self.client.chat.completions.create(
+        model="gpt-3.5-turbo-16k",
+        messages=[{
+        "role": "user",
+        "content": [
+                {
+                "type": "text",
+                "text": msg
+                }
+            ]
+        }],
+        temperature=1,
+        max_tokens=10000,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0
+        )
+        Logger.info("Received response from OpenAI")
+        return response.choices[0].message.content
+    
+    # def filter_data(self,text):
+        
+    #     msg = f"please use this json payload {text} and correct the formatting of dob - yyyy-dd-MM and height in cm from fts and time in 24 hours format and fill subcaste withh help of name and please fill gender using name only return json content"
+    #     response = self.client.chat.completions.create(
+    #     model="gpt-3.5-turbo-16k",
+    #     messages=[{
+    #     "role": "user",
+    #     "content": [
+    #             {
+    #             "type": "text",
+    #             "text": msg
+    #             }
+    #         ]
+    #     }],
+    #     temperature=1,
+    #     max_tokens=1000,
+    #     top_p=1,
+    #     frequency_penalty=0,
+    #     presence_penalty=0
+    #     )
+    #     return response.choices[0].message.content
+    
+    # def fill_other_empty_fields(self, payload:str, pdf_file_path: str):
+    #     text = PdfExtracter.extract_text_from_pdf_url(pdf_file_path)
+    #     msg = f"please use this {text} and fillall empty fields of this {payload} json payload  only return json content"
+    #     response = self.client.chat.completions.create(
+    #     model="gpt-3.5-turbo-16k",
+    #     messages=[{
+    #     "role": "user",
+    #     "content": [
+    #             {
+    #             "type": "text",
+    #             "text": msg
+    #             }
+    #         ]
+    #     }],
+    #     temperature=1,
+    #     max_tokens=1000,
+    #     top_p=1,
+    #     frequency_penalty=0,
+    #     presence_penalty=0
+    #     )
+    #     return response.choices[0].message.content
+
+
+
+
+    industries = [
+    "Accounting/Finance",
+    "Administrative/Clerical",
+    "Advertising/Marketing/PR",
+    "Aerospace/Defense",
+    "Agriculture/Forestry",
+    "Architecture/Design",
+    "Arts/Entertainment/Media",
+    "Automotive",
+    "Biotechnology",
+    "Business Development",
+    "Retail/Wholesale/Business",  
+    "Construction/Facilities",
+    "Consulting",
+    "Customer Service",
+    "Education/Training",
+    "Energy/Utilities",
+    "Engineering",
+    "Environmental",
+    "Executive Management",
+    "Fashion",
+    "Financial Services",
+    "Food Services/Hospitality",
+    "Government/Public Sector",
+    "Healthcare",
+    "Human Resources",
+    "Information Technology",
+    "Insurance",
+    "Internet/E-commerce",
+    "Legal",
+    "Logistics/Transportation",
+    "Manufacturing",
+    "Nonprofit/NGO",
+    "Pharmaceutical/Biotech",
+    "Real Estate",
+    "Retail/Wholesale",
+    "Sales",
+    "Science/Research",
+    "Security/Law Enforcement",
+    "Sports/Recreation",
+    "Telecommunications",
+    "Tourism/Travel",
+    "Trades/Skilled Labor",
+    "Writing/Editing/Publishing"
+    ]
+
+    def categorize_job_title(self,text):
+        msg = f"Please categorize the following job title into the most appropriate category from the list provided: {text}. Categories include: {{{', '.join(self.industries)}}}. Just write the category name from the list above. If the job title specifically describes itself as a business, please write 'Business'.  If a job title can be in multiple categories and also belongs to Information Technology, prioritize Information Technology unless it specifically describes itself as a business."
+        Logger.info("Requesting categorization of job title... waiting for response")
+        response = self.client.chat.completions.create(
+            model="gpt-3.5-turbo-16k",
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": msg
+                    }
+                ]
+            }],
+            temperature = 1,
+            max_tokens = 1000,
+            top_p = 1,
+            frequency_penalty = 0,
+            presence_penalty = 0
+        )
+        Logger.info("Received categorization response")
+        return response.choices[0].message.content
+    
+
+
+
+
+    def matching_job_title(self,text1,text2):
+        msg = f"Please categorize the following job title into the most appropriate category from the list provided: {text1} and {text2}. Categories include: {{{', '.join(self.industries)}}}. Just write the category name from the list above. If the job title specifically describes itself as a business, please write 'Business'.  If a job title can be in multiple categories and also belongs to Information Technology, prioritize Information Technology unless it specifically describes itself as a business."
+
+        response = self.client.chat.completions.create(
+            model="gpt-3.5-turbo-16k",
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": msg
+                    }
+                ]
+            }],
+            temperature = 1,
+            max_tokens = 1000,
+            top_p = 1,
+            frequency_penalty = 0,
+            presence_penalty = 0
+        )
+        categorized_category = response.choices[0].message.content.strip()
+        Logger.info("Received categorized category")
+
+        category_text1 = self.categorize_job_title(text1)
+        category_text2 = self.categorize_job_title(text2)
+
+        if category_text1 == category_text2 == categorized_category:
+            Logger.info("Category Matched")
+            return 1
+        else:
+            Logger.info("Category not Matched")
+            return 0
+    
+    def new_conversation(self):
+        self.client = OpenAI(api_key=Config.CHAT_GPT_API_KEY)
+
+
+# print(Chatgpt().matching_job_title("software tester","lawyer"))
