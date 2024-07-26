@@ -388,14 +388,17 @@ def get_user_details():
         
         try:
             phoneNumber: int = int(userDetails[0]["PhoneNumber"])
-            
-        except ValueError as e:
-            Logger.error("Value Error Phone Number not Available")
-            phoneNumber: int = int(matrimonial_details['PhoneNumber'])
-            
+            Logger.warning(f"Phone Number: {phoneNumber}")
         except Exception as e:
-            Logger.error("Unexpected Error Phone Number not Available")
-            phoneNumber: int = 0
+            Logger.error("Value Error Phone Number not Available in user details")
+            Logger.warning(f"Phone Number IN Matrimonial: {matrimonial_details['PhoneNumber']}")
+            
+            phoneNumber: int = int(matrimonial_details['PhoneNumber'])
+            Logger.warning(f"Phone Number: {phoneNumber}")
+            
+        # except Exception as e:
+        #     Logger.error("Unexpected Error Phone Number not Available")
+        #     phoneNumber: int = 0
 
 
         db.commit()
