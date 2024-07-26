@@ -478,7 +478,7 @@ def add_bio_data_pdf():
             except json.JSONDecodeError as jd:
                 Logger.error(f"JSON Decode Error: {jd}")
                 exeptionOccurs = True
-        return json.dumps({"status": "success", "message": model.__dict__}), 200
+        return json.dumps({'status': 'success', 'message': model.__dict__}), 200
         
     except mysql.connector.Error as e: 
         tb = traceback.extract_tb(e.__traceback__)

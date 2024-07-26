@@ -16,7 +16,7 @@ class Chatgpt:
         if self.tries == 3:
             self.tries = 0
         
-        msg = f"please read this text {text} and fill the provided json payload : {payload} and correct the formatting of dob - yyyy-MM-dd and height in cm from fts and time in 24 hours format and fill subcaste withh help of name and please fill gender using name only and please fill the state city country and address and mobile or phone number mandatory and fill all fields of the payload json return json content only"
+        msg = f"please read this text {text} and fill the provided json payload : {payload} and correct the formatting of dob - yyyy-MM-dd and height in cm from fts and time in 24 hours format and fill subcaste withh help of name and please fill gender using name only and please fill the state city country and address and mobile or phone number mandatory and fill all fields of the payload json and if subCaste not provided leave empty and return json content only"
         Logger.info("Chatgpt Requesting your message..... waiting for response")
         response = self.client.chat.completions.create(
         model="gpt-3.5-turbo-16k",
