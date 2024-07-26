@@ -326,7 +326,9 @@ def add_matrimonial_profile():
         return json.dumps({"status": "failed", 'message': "Invalid data format"}), 400
     
     except Exception as e:
-        Logger.error(f"Unexpected Error: {e}")
+        tb = traceback.extract_tb(e.__traceback__)
+        traceback.print_exc()
+        Logger.error(f"Unexpected Error: {tb}")
         db.rollback()
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
@@ -366,7 +368,9 @@ def add_match_profile():
         return json.dumps({"status": "failed", 'message': "Invalid data format"}), 400
     
     except Exception as e:
-        Logger.error(f"Unexpected error: {e}")
+        tb = traceback.extract_tb(e.__traceback__)
+        traceback.print_exc()
+        Logger.error(f"Unexpected Error: {tb}")
         db.rollback()
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
@@ -406,7 +410,9 @@ def add_gallery_images():
         return json.dumps({"status": "failed",'message': "Invalid data format"}), 400
     
     except Exception as e:
-        Logger.error(f"Unexpected error: {e}")
+        tb = traceback.extract_tb(e.__traceback__)
+        traceback.print_exc()
+        Logger.error(f"Unexpected Error: {tb}")
         db.rollback()
         return json.dumps({"status": "failed","message": "some error occurs, Please contact to developer"}), 400
     finally:
@@ -465,22 +471,17 @@ def add_bio_data_pdf():
                 tries += 1
                 Logger.debug(f"Attempt {tries} to process PDF data")
                 bio_data_json = chatgpt_pdf_to_json(pdf_file_path)
-                response_payload_json = _chatgpt.chat(text=bio_data_json, payload=query_payload)
+                response_payload_json = bio_data_json
                 jsonObject = json.loads(response_payload_json)
                 
                 model = ExtractionPayloadModel.fill_model(jsonObject)
             except json.JSONDecodeError as jd:
-                # tb = traceback.extract_tb(e.__traceback__)
-                # filename, line_number, func_name, text = tb[-1]
-                    
-                # traceback.print_exc()
                 Logger.error(f"JSON Decode Error: {jd}")
                 exeptionOccurs = True
         return json.dumps({"status": "success", "message": model.__dict__}), 200
         
     except mysql.connector.Error as e: 
         tb = traceback.extract_tb(e.__traceback__)
-        filename, line_number, func_name, text = tb[-1]
                     
         traceback.print_exc()
         Logger.error(f"MySQL Database Error: {e}")
@@ -497,7 +498,9 @@ def add_bio_data_pdf():
 
     
     except Exception as e:
-        Logger.error(f"Unexpected Error: {e}")
+        tb = traceback.extract_tb(e.__traceback__)
+        traceback.print_exc()
+        Logger.error(f"Unexpected Error: {tb}")
         db.rollback()
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:

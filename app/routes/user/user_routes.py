@@ -382,19 +382,26 @@ def get_user_details():
         profileId = userDetails[0]["Id"]
         
         cursorDb.execute(user_query.GetMatrimonialData(profileId))
-        subscribe_Token = cursorDb.fetchone()['Subscribe_Token']
-        print(subscribe_Token)
-
+        matrimonial_details = cursorDb.fetchone()
+        subscribe_Token = matrimonial_details['Subscribe_Token']
+        name = matrimonial_details['Name']
+        
         try:
             phoneNumber: int = int(userDetails[0]["PhoneNumber"])
+            
+        except ValueError as e:
+            Logger.error("Value Error Phone Number not Available")
+            phoneNumber: int = int(matrimonial_details['PhoneNumber'])
+            
         except Exception as e:
-            Logger.error("Phone Number not Available")
+            Logger.error("Unexpected Error Phone Number not Available")
             phoneNumber: int = 0
 
 
         db.commit()
         Logger.info(f"User details retrieved successfully for UserID: {userId}")
-        return json.dumps({"status": "success", "username": username, "phoneNumber" : phoneNumber, "email": email, "subscribe_token": subscribe_Token}), 200
+        Logger.debug(f"username: {username} | matri_name: {name} | phoneNumber: {phoneNumber} | email: {email} | subscribe_token: {subscribe_Token}")
+        return json.dumps({"status": "success", "username": username, "matri_name": name, "phoneNumber" : phoneNumber, "email": email, "subscribe_token": subscribe_Token}), 200
         
     except mysql.connector.Error as e: 
             Logger.error(f"MySQL Error: {e}")

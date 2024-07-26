@@ -10,9 +10,11 @@ from app.extentions.logger import Logger
 class Chatgpt:
     def __init__(self):
         self.client = OpenAI(api_key=Config.CHAT_GPT_API_KEY)
-
-
+    
+    tries = 0
     def chat(self,text, payload):
+        if self.tries == 3:
+            self.tries = 0
         
         msg = f"please read this text {text} and fill the provided json payload : {payload} and correct the formatting of dob - yyyy-MM-dd and height in cm from fts and time in 24 hours format and fill subcaste withh help of name and please fill gender using name only and please fill the state city country and address and mobile or phone number mandatory and fill all fields of the payload json return json content only"
         Logger.info("Chatgpt Requesting your message..... waiting for response")
@@ -33,54 +35,18 @@ class Chatgpt:
         frequency_penalty=0,
         presence_penalty=0
         )
+        chatgpt_response = response.choices[0].message.content
         Logger.info("Received response from OpenAI")
-        return response.choices[0].message.content
-    
-    # def filter_data(self,text):
+        Logger.debug(f"Response From GPT: {chatgpt_response}")
         
-    #     msg = f"please use this json payload {text} and correct the formatting of dob - yyyy-dd-MM and height in cm from fts and time in 24 hours format and fill subcaste withh help of name and please fill gender using name only return json content"
-    #     response = self.client.chat.completions.create(
-    #     model="gpt-3.5-turbo-16k",
-    #     messages=[{
-    #     "role": "user",
-    #     "content": [
-    #             {
-    #             "type": "text",
-    #             "text": msg
-    #             }
-    #         ]
-    #     }],
-    #     temperature=1,
-    #     max_tokens=1000,
-    #     top_p=1,
-    #     frequency_penalty=0,
-    #     presence_penalty=0
-    #     )
-    #     return response.choices[0].message.content
+        
+        while chatgpt_response.lower().__contains__("sorry,") and self.tries < 3:
+            self.tries += 1
+            time.sleep(2)
+            chatgpt_response = self.chat(text, payload)
+            Logger.debug(f"Error in response retrying - {self.tries}")
+        return chatgpt_response
     
-    # def fill_other_empty_fields(self, payload:str, pdf_file_path: str):
-    #     text = PdfExtracter.extract_text_from_pdf_url(pdf_file_path)
-    #     msg = f"please use this {text} and fillall empty fields of this {payload} json payload  only return json content"
-    #     response = self.client.chat.completions.create(
-    #     model="gpt-3.5-turbo-16k",
-    #     messages=[{
-    #     "role": "user",
-    #     "content": [
-    #             {
-    #             "type": "text",
-    #             "text": msg
-    #             }
-    #         ]
-    #     }],
-    #     temperature=1,
-    #     max_tokens=1000,
-    #     top_p=1,
-    #     frequency_penalty=0,
-    #     presence_penalty=0
-    #     )
-    #     return response.choices[0].message.content
-
-
 
 
     industries = [

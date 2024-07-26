@@ -59,14 +59,13 @@ def GetMD5Hash(text: str):
     return hash_object.hexdigest()
 
 def get_project_root():
-    Logger.debug("Starting get_project_root function")
     current_dir = os.path.abspath(os.getcwd())
     while not os.path.exists(os.path.join(current_dir, 'app')):
         current_dir = os.path.dirname(current_dir)
         if current_dir == os.path.dirname(current_dir):
             # Reached the root directory without finding the marker file
             raise Exception("Marker file not found in project hierarchy")
-        Logger.info(f"Project root directory found: {current_dir}")
+    Logger.info(f"Project root directory found: {current_dir}")
     return current_dir
 
 def is_null_or_empty(text):
@@ -263,7 +262,7 @@ def validate_phone_number(phone: int) -> str:
         return json.dumps({"status": "failed", 'message': f"Something went wrong {e}"}), 400
     
 def chatgpt_pdf_to_json(pdfFilePath) -> str:
-    payload = "{\r\n  \"personal_info\": {\r\n    \"full_name\": \"string\",\r\n    \"gender\": \"string\",\r\n    \"date_of_birth\": \"string\",\r\n \"time\": \"string\",\r\n    \"age\": \"integer\",\r\n    \"height\": \"string\",\r\n    \"weight\": \"string\",\r\n    \"blood_group\": \"string\",\r\n    \"complexion\": \"string\",\r\n    \"mother_tongue\": \"string\",\r\n    \"marital_status\": \"string\",\r\n    \"caste\": \"string\",\r\n    \"sub_caste\": \"string\",\r\n    \"gotra\": \"string\",\r\n    \"religion\": \"string\",\r\n    \"nationality\": \"string\"\r\n  },\r\n  \"contact_info\": {\r\n    \"email\": \"string\",\r\n    \"phone_number\": \"string\",\r\n  \"mobile_number\": \"string\",\r\n   \"address\": {\r\n      \"street\": \"string\",\r\n      \"city\": \"string\",\r\n      \"state\": \"string\",\r\n      \"country\": \"string\",\r\n      \"zip_code\": \"string\"\r\n    }\r\n  },\r\n  \"family_info\": {\r\n    \"father_name\": \"string\",\r\n    \"mother_name\": \"string\",\r\n    \"siblings\": [\r\n      {\r\n        \"name\": \"string\",\r\n        \"relationship\": \"string\",\r\n        \"marital_status\": \"string\",\r\n        \"occupation\": \"string\"\r\n      }\r\n    ]\r\n  },\r\n  \"education\": {\r\n    \"highest_degree\": \"string\",\r\n    \"institution\": \"string\",\r\n    \"year_of_passing\": \"string\",\r\n    \"additional_qualifications\": \"string\"\r\n  },\r\n  \"occupation\": {\r\n    \"job_title\": \"string\",\r\n    \"company\": \"string\",\r\n    \"location\": \"string\",\r\n    \"annual_income\": \"string\"\r\n  },\r\n  \"other_details\": {\r\n    \"hobbies\": \"string\",\r\n    \"interests\": \"string\",\r\n    \"languages_known\": \"string\",\r\n    \"about_me\": \"string\"\r\n  }\r\n}".replace("\r\n", "")
+    payload = query_payload
     chatgpt = Chatgpt()
     pdfText = PdfExtracter.extract_text_from_pdf_url(pdfFilePath)
     Logger.debug(f"Extracted PDF text: {pdfText}")

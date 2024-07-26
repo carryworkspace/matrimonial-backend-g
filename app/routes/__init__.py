@@ -10,6 +10,7 @@ Router = Blueprint('Router', __name__)
 def createDbConnection():
     # global db, cursorDb
 
+    print("********************",Config.DB_HOST, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME    )
     db = connector.connect(
         host=Config.DB_HOST,
         user=Config.DB_USER,

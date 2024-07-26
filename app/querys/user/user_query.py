@@ -74,7 +74,7 @@ def GetAllMatrimonialData():
 
 def GetMatchedProfiles(mainProfileId: int):
     Logger.debug(f"Generating SQL query to get matrimonial data ")
-    return f"select * from MatchedProfiles_M where MainProfileId= {mainProfileId} and IsExpired = 0"
+    return f"select * from MatchedProfiles_M where MainProfileId= {mainProfileId} and IsExpired = 0 order by MatchScore desc"
 
 # Insert
 
