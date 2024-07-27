@@ -19,6 +19,7 @@ from app.services.bio_data_extraction import GoogleDrive
 from app.extentions.base import info
 # from app.extentions.logger import Logger 
 import traceback
+from app.models.update_matrimonial_profile_model import UpdateMatrimonialProfileModel
 
 # check  token before login
 @Router.before_request
@@ -385,6 +386,11 @@ def get_user_details():
         matrimonial_details = cursorDb.fetchone()
         subscribe_Token = matrimonial_details['Subscribe_Token']
         name = matrimonial_details['Name']
+        sub_caste = matrimonial_details['SubCaste']
+        weight = matrimonial_details['WeightKG']
+        height = matrimonial_details['HeightCM']
+        address = matrimonial_details['Address']
+        about_me = matrimonial_details['AboutMe']
         
         try:
             phoneNumber: int = int(userDetails[0]["PhoneNumber"])
@@ -396,15 +402,10 @@ def get_user_details():
             phoneNumber: int = int(matrimonial_details['PhoneNumber'])
             Logger.warning(f"Phone Number: {phoneNumber}")
             
-        # except Exception as e:
-        #     Logger.error("Unexpected Error Phone Number not Available")
-        #     phoneNumber: int = 0
-
-
         db.commit()
         Logger.info(f"User details retrieved successfully for UserID: {userId}")
-        Logger.debug(f"username: {username} | matri_name: {name} | phoneNumber: {phoneNumber} | email: {email} | subscribe_token: {subscribe_Token}")
-        return json.dumps({"status": "success", "username": username, "matri_name": name, "phoneNumber" : phoneNumber, "email": email, "subscribe_token": subscribe_Token}), 200
+        Logger.debug(f"username: {username} | matri_name: {name} | phoneNumber: {phoneNumber} | email: {email} | sub_caste: {sub_caste} | weight: {weight} | height: {height} | address: {address} | about_me: {about_me} | subscribe_token: {subscribe_Token}")
+        return json.dumps({"status": "success", "username": username, "matri_name": name, "phoneNumber" : phoneNumber, "email": email, "sub_caste": sub_caste, "weight": weight, "height": height, "address": address, "about_me": about_me, "subscribe_token": subscribe_Token}), 200
         
     except mysql.connector.Error as e: 
             Logger.error(f"MySQL Error: {e}")
@@ -424,7 +425,70 @@ def get_user_details():
         closeDbConnection(db, cursorDb)
         Logger.info("Database connection closed")
 
-
+@Router.route('/edit-user-details', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def update_matrimonial_profile():
+    Logger.info("Creating database connection.")
+    db, cursorDb = createDbConnection()
+    data = request.get_json()
+    Logger.info("Received data")
+    try:
+        Logger.info("Checking for missing keys in the input data.")
+        # Check if all expected keys are present
+        attributes = UpdateMatrimonialProfileModel().get_attribute_names()
+        missing_keys = check_missing_keys(data, attributes)
+        if missing_keys != None:
+            Logger.warning("Missing keys found in the input data")
+            return missing_keys
+        Logger.info("Filling the model with input data.")
+        
+        model = UpdateMatrimonialProfileModel.fill_model(data)
+        print("DATA", model.__dict__)
+        Logger.info(f"Checking if profile with ID {model.profileId} exists.")
+        cursorDb.execute(user_query.GetProfileDetailsById(model.profileId))
+        profiles = cursorDb.fetchall()
+        if len(profiles) == 0:
+            Logger.warning(f"Profile ID {model.profileId} is invalid.")
+            return json.dumps({"status": "failed", "message": "Profile Id Invalid. This profile id not exist"})
+        
+        Logger.info(f"Checking if matrimonial profile with profile ID {model.profileId} exists.")
+        
+        cursorDb.execute(user_query.GetMatrimonialProfileByProfileId(model.profileId))
+        matrimonial_profile = cursorDb.fetchall()
+        if len(matrimonial_profile) != 0:
+            print("PROFILES", matrimonial_profile)
+            Logger.info("Matrimonial profile exists, updating the profile.")
+            cursorDb.execute(user_query.UpdateMatrimonialUserDetails(), model.__dict__)
+            print("ROW AFFECT")
+            db.commit()
+            
+            return json.dumps({"status": "success", "message": "User Details Data Updated Successfully"})
+        Logger.info("User Details Profile Not Exsist Successfully")
+        db.commit()
+        return json.dumps({"status":"failed", "message": "This profile id does not exists"}), 400
+        
+    except mysql.connector.Error as e: 
+            Logger.error(f"MySQL Error: {e}")
+            print("ERROR SQL")
+            return json.dumps({"status": "failed", 'message': "some error occurs, in query execution"}), 400
+    
+    except ValueError as ve:
+        Logger.error(f"ValueError: {ve}")
+        print("ERROR Value")
+        
+        db.rollback()
+        return json.dumps({"status": "failed", 'message': "Invalid data format"}), 400
+    
+    except Exception as e:
+        tb = traceback.extract_tb(e.__traceback__)
+        traceback.print_exc()
+        Logger.error(f"Unexpected Error: {tb}")
+        print(tb)
+        db.rollback()
+        return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
+    finally:
+        Logger.info("Closing database connection.")
+        closeDbConnection(db, cursorDb)
 
 
 

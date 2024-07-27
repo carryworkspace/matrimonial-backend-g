@@ -400,3 +400,18 @@ def UpdateMatrimonial():
 WHERE
     ProfileId = %(profileId)s;"""
 
+
+def UpdateMatrimonialUserDetails():
+    Logger.debug("Generated SQL query for updating matromonial")
+    return """UPDATE MatrimonialProfile_M SET
+    Name = %(name)s,
+    HeightCM = %(heightCM)s,
+    WeightKG = %(weightKG)s,
+    SubCaste = %(subCaste)s,
+    Address = %(address)s,
+    PhoneNumber = %(phoneNumber)s,
+    Email = %(email)s,
+    AboutMe = %(aboutMe)s
+WHERE
+    ProfileId = %(profileId)s;"""
+
