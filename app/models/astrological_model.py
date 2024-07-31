@@ -113,9 +113,13 @@ class AstrologicalDataModel:
         guna_milan = GunaMilan.fill_model(data_dict.get('guna_milan', {}))
         return cls(girl_info=girl_info, boy_info=boy_info, message=message, guna_milan=guna_milan)
 
-    def get_attribute_names(self):
+    def get_attribute_names(self, exclude=None):
         attributes = dir(self)
-        return [attr for attr in attributes if not attr.startswith('__') and not callable(getattr(self, attr))]
+        exclude = exclude or []
+        return [
+            attr for attr in attributes
+            if not attr.startswith('__') and not callable(getattr(self, attr)) and attr not in exclude
+        ]
 
     def __repr__(self):
         return f"<ProfileModel girl_info={self.girl_info}, boy_info={self.boy_info}, message={self.message}, guna_milan={self.guna_milan}>"

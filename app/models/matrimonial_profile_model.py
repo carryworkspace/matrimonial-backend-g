@@ -3,8 +3,7 @@
 class MatrimonialProfileModel:
     def __init__(self, profileId=None, name=None, gender=None, dob=None, time=None, heightCM=None,
                  weightKG=None, bloodGroup=None, complexion=None, motherTongue=None,
-                 maritalStatus=None, caste=None, subCaste=None, gotra=None, religion=None,
-                 address=None, phoneNumber=None, email=None, city=None, state=None,
+                 maritalStatus=None, subCaste=None, gotra=None, address=None, phoneNumber=None, email=None, city=None, state=None,
                  country=None, zipCode=None, fatherName=None, motherName=None,
                  highestDegree=None, institution=None, yearOfPassing=None,
                  additionalQualification=None, occupation=None, occupationCompany=None,
@@ -46,7 +45,6 @@ class MatrimonialProfileModel:
         self.aboutMe = aboutMe
         
         
-        
 
     @classmethod
     def fill_model(cls, data):
@@ -62,10 +60,8 @@ class MatrimonialProfileModel:
             complexion=data.get('complexion'),
             motherTongue=data.get('motherTongue'),
             maritalStatus=data.get('maritalStatus'),
-            caste=data.get('caste'),
             subCaste=data.get('subCaste'),
             gotra=data.get('gotra'),
-            religion=data.get('religion'),
             address=data.get('address'),
             phoneNumber=data.get('phoneNumber'),
             email=data.get('email'),
@@ -88,8 +84,10 @@ class MatrimonialProfileModel:
             aboutMe=data.get('aboutMe')
         )
     
-    def get_attribute_names(self):
-        # Get all attributes of the class
+    def get_attribute_names(self, exclude=None):
         attributes = dir(self)
-        # Filter out private and special attributes
-        return [attr for attr in attributes if not attr.startswith('__') and not callable(getattr(self, attr))]
+        exclude = exclude or []
+        return [
+            attr for attr in attributes
+            if not attr.startswith('__') and not callable(getattr(self, attr)) and attr not in exclude
+        ]

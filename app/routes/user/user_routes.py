@@ -1,7 +1,7 @@
 import time
 import os
+from datetime import datetime
 import json
-# from concurrent.futures import ThreadPoolExecutor
 import mysql.connector
 from flask import jsonify, request
 from flask_cors import cross_origin
@@ -20,6 +20,7 @@ from app.extentions.base import info
 # from app.extentions.logger import Logger 
 import traceback
 from app.models.update_matrimonial_profile_model import UpdateMatrimonialProfileModel
+from app.models.matrimonial_profile_model import MatrimonialProfileModel
 
 # check  token before login
 @Router.before_request
@@ -391,6 +392,17 @@ def get_user_details():
         height = matrimonial_details['HeightCM']
         address = matrimonial_details['Address']
         about_me = matrimonial_details['AboutMe']
+        gender = matrimonial_details['Gender']
+        dob = matrimonial_details['Dob']
+        marital_status = matrimonial_details['MaritalStatus']
+        email = matrimonial_details['Email']
+        education = matrimonial_details['HighestDegree']
+        
+        dob_datetime = datetime.datetime.strptime(dob, '%Y-%m-%d')
+        age = calculate_age(dob_datetime)
+        
+        # h 
+        
         
         try:
             phoneNumber: int = int(userDetails[0]["PhoneNumber"])
@@ -405,7 +417,7 @@ def get_user_details():
         db.commit()
         Logger.info(f"User details retrieved successfully for UserID: {userId}")
         Logger.debug(f"username: {username} | matri_name: {name} | phoneNumber: {phoneNumber} | email: {email} | sub_caste: {sub_caste} | weight: {weight} | height: {height} | address: {address} | about_me: {about_me} | subscribe_token: {subscribe_Token}")
-        return json.dumps({"status": "success", "username": username, "matri_name": name, "phoneNumber" : phoneNumber, "email": email, "sub_caste": sub_caste, "weight": weight, "height": height, "address": address, "about_me": about_me, "subscribe_token": subscribe_Token}), 200
+        return json.dumps({"status": "success", "username": username, "matri_name": name, "age": age, "phoneNumber" : phoneNumber, "email": email,"gender": gender, "dob": dob , "marital_status": marital_status,"sub_caste": sub_caste, "weight": weight, "height": height,"education": education ,"address": address, "about_me": about_me, "subscribe_token": subscribe_Token}), 200
         
     except mysql.connector.Error as e: 
             Logger.error(f"MySQL Error: {e}")
@@ -417,8 +429,10 @@ def get_user_details():
         return json.dumps({"status": "failed", 'message': "Invalid data format"}), 400
     
     except Exception as e:
-        Logger.error(f"Unexpected Error: {e}")
-        print(e)
+        tb = traceback.extract_tb(e.__traceback__)
+        traceback.print_exc()
+        Logger.error(f"Unexpected Error: {tb}")
+        print(tb)
         db.rollback()
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
@@ -433,13 +447,14 @@ def update_matrimonial_profile():
     data = request.get_json()
     Logger.info("Received data")
     try:
-        Logger.info("Checking for missing keys in the input data.")
+        # Logger.info("Checking for missing keys in the input data.")
         # Check if all expected keys are present
-        attributes = UpdateMatrimonialProfileModel().get_attribute_names()
-        missing_keys = check_missing_keys(data, attributes)
-        if missing_keys != None:
-            Logger.warning("Missing keys found in the input data")
-            return missing_keys
+        # exclude = ['aboutMe']
+        # attributes = UpdateMatrimonialProfileModel().get_attribute_names()
+        # missing_keys = check_missing_keys(data, attributes)
+        # if missing_keys != None:
+        #     Logger.warning("Missing keys found in the input data")
+        #     return missing_keys
         Logger.info("Filling the model with input data.")
         
         model = UpdateMatrimonialProfileModel.fill_model(data)

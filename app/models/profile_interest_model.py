@@ -16,8 +16,10 @@ class ProfileInterestModel:
             profileId=data_dict.get('profileId'),
         )
 
-    def get_attribute_names(self):
-        # Get all attributes of the class
+    def get_attribute_names(self, exclude=None):
         attributes = dir(self)
-        # Filter out private and special attributes
-        return [attr for attr in attributes if not attr.startswith('__') and not callable(getattr(self, attr))]
+        exclude = exclude or []
+        return [
+            attr for attr in attributes
+            if not attr.startswith('__') and not callable(getattr(self, attr)) and attr not in exclude
+        ]

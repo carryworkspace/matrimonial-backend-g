@@ -215,6 +215,7 @@ def match_making_result():
                 name = profile["Name"]
                 dob = profile["Dob"]
                 city = profile["City"]
+                subscribeToken = profile["Subscribe_Token"]
                 state = profile["State"]
                 height = profile["HeightCM"]
                 
@@ -237,6 +238,7 @@ def match_making_result():
                 match_making_result["age"] = age
                 match_making_result["height"] = final_height
                 match_making_result["location"] = location
+                match_making_result["SubscribeToken"] = subscribeToken
                 
                 # fetch profile picure
                 cursorDb.execute(querys.GetProfilePictureById(otherProfileId))

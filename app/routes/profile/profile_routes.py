@@ -284,7 +284,8 @@ def add_matrimonial_profile():
     try:
         Logger.info("Checking for missing keys in the input data.")
         # Check if all expected keys are present
-        attributes = MatrimonialProfileModel().get_attribute_names()
+        exclude = ["bloodGroup", "motherTongue", "fatherName", "motherName", "institution", "yearOfPassing", "additionalQualification", "occupationCompany", "occupationLocation", "annualIncomeINR", "languagesKnown", "aboutMe"]
+        attributes = MatrimonialProfileModel().get_attribute_names(exclude=exclude)
         missing_keys = check_missing_keys(data, attributes)
         if missing_keys != None:
             Logger.warning("Missing keys found in the input data")
@@ -462,7 +463,7 @@ def add_bio_data_pdf():
                 db.commit()
                 Logger.debug(f"Last inserted row ID: {cursorDb.lastrowid}")
 
-        _chatgpt = Chatgpt()
+        # _chatgpt = Chatgpt()
         exeptionOccurs = True
         tries: int = 0
         while exeptionOccurs and tries < 3:
