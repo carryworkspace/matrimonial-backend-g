@@ -3,7 +3,7 @@
 class UpdateMatrimonialProfileModel:
     def __init__(self, profileId=None, name=None, heightCM=None,
                  weightKG=None, subCaste=None,
-                 address=None, phoneNumber=None, email=None, aboutMe=None, maritalStatus=None, dob=None, education=None):
+                 address=None, phoneNumber=None, email=None, aboutMe=None, maritalStatus=None, gender=None, dob=None, education=None):
         
         self.profileId = profileId
         self.name = name
@@ -16,6 +16,7 @@ class UpdateMatrimonialProfileModel:
         self.aboutMe = aboutMe
         self.maritalStatus = maritalStatus
         self.dob = dob
+        self.gender = gender
         self.education = education
 
     @classmethod

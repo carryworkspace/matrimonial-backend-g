@@ -1,8 +1,7 @@
 import os
-from datetime import datetime
-from config import Config
 import sys
 from loguru import logger
+from config import Config
 
 # Custom log format
 log_format = (
@@ -15,26 +14,22 @@ LOG_FILE_PATH = Config.LOG_FILE_PATH
 
 class Logger:
     
-    
     @staticmethod
     def setup_logger():
         # Ensure the log folder exists
         if not os.path.exists(LOG_FILE_PATH):
             os.makedirs(LOG_FILE_PATH)
         
+        # Check if logger is already configured
+        if logger._core.handlers:
+            return
+
         # Remove all existing handlers
         logger.remove()
-        
+
         # Add a new handler for file logging
         logger.add(sys.stdout, format=log_format)
-        logger.add(LOG_FILE_PATH, format="{time} | {level} | {message}")
-    
-    # @staticmethod
-    # def ensure_log_file(file_name = LOG_FILE_PATH):
-    #     file_name = file_name
-    #     # if not os.path.exists(file_name):
-    #     logger.add(sys.stdout, format=log_format)
-    #     logger.add(file_name, format=log_format, rotation="1 MB", retention="10 days")
+        logger.add(LOG_FILE_PATH, format="{time} | {level} | {message}", rotation="1 MB", retention="10 days")
 
     @staticmethod
     def error(text):
@@ -42,18 +37,18 @@ class Logger:
         
     @staticmethod    
     def info(text):
-        logger.info(text +"\n")
+        logger.info(text)
         
     @staticmethod    
     def debug(text):
-        logger.debug(text+"\n")
+        logger.debug(text)
         
     @staticmethod    
     def success(text):
-        logger.success(text+"\n")
+        logger.success(text)
         
     @staticmethod    
     def warning(text):
-        logger.warning(text+"\n")
+        logger.warning(text)
 
 Logger.setup_logger()

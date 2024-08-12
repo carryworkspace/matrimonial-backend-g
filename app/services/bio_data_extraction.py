@@ -12,7 +12,7 @@ from app.routes import createDbConnection, closeDbConnection
 from app.models.matrimonial_profile_model import MatrimonialProfileModel
 from app.models.bio_data_pdf_model import BioDataPdfModel
 from app.querys.user import user_query as querys
-from app.extentions.common_extensions import chatgpt_pdf_to_json, query_payload, get_project_root, generate_random_number
+from app.extentions.common_extensions import chatgpt_pdf_to_json, query_payload, get_project_root, generate_random_number, get_random_name
 from app.extentions.chatgpt import Chatgpt
 from config import Config
 from app.extentions.logger import Logger
@@ -103,14 +103,27 @@ class GoogleDrive:
           #user already exist
       # if self.profile_exists(cursorDb, dataDict['Name'], dataDict['PhoneNumber']):
       #   return "User already exists."
+      phoneNumber = dataDict['phoneNumber']
+  
+      username = get_random_name(phoneNumber)
+      password = generate_random_number(length=8)
+      insert_user_query = querys.AddUser(username, phoneNumber, 'null', 'null', dataDict['email'])
+      Logger.info(f"Inserting new user with query: {insert_user_query}")
+      cursorDb.execute(insert_user_query)
+      new_user_id = cursorDb.lastrowid
+      cursorDb.execute(querys.UpdatePassword(new_user_id, password))
+      cursorDb.execute(querys.AddProfileForUser(new_user_id))
+      new_profile_id = cursorDb.lastrowid
           
-      dataDict["profileId"] = generate_random_number()
+      dataDict["profileId"] = new_profile_id
       Logger.debug(f"Generated profile ID: {dataDict['profileId']}")
           
       model = MatrimonialProfileModel.fill_model(dataDict)
       pdf_model = BioDataPdfModel.fill_model({"profileId": model.profileId, "pdfName": fileName})
       Logger.debug("Filled MatrimonialProfileModel and BioDataPdfModel.")
-      cursorDb.execute(querys.AddMatrimonialProfile(), model.__dict__)
+      matrimonialData = model.__dict__
+      matrimonialData["subscribeToken"] = f"{matrimonialData['name'].replace(' ', '_')}_{matrimonialData['phoneNumber'].replace(' ', '_')}"
+      cursorDb.execute(querys.AddMatrimonialProfile(), matrimonialData)
       Logger.debug("Executed query to insert MatrimonialProfileModel.")
       cursorDb.execute(querys.AddBioDataPdfFile(), pdf_model.__dict__)
       Logger.debug("Executed query to insert BioDataPdfModel.")
@@ -125,8 +138,8 @@ class GoogleDrive:
   def extract_and_add_to_DB_MAIN(self):
     Logger.debug("Starting extract_and_add_to_DB_MAIN method.")
     # IDs of the source and destination folders
-    source_folder_id = '14uVaxzCcghLs3fgtMfrnFEIWfyjw_keE'
-    destination_folder_id = '1aBQEr8pGoJ8uWzzrUi83meAuWpj9tva3'
+    source_folder_id = Config.DESTINATION_FOLDER
+    destination_folder_id = Config.SOURCE_FOLDER
     save_path = Config.BIO_DATA_PDF_PATH
     
     
@@ -157,17 +170,11 @@ class GoogleDrive:
           
           chatgpt_response_json = chatgpt_pdf_to_json(pdf_file_path)
           Logger.debug(f"Converted PDF to JSON for file: {file_name}")
-          response_payload_json = _chatgpt.chat(text=chatgpt_response_json, payload=query_payload)
-          Logger.debug(f"Performed chat interaction for file: {file_name}")
-          filter_data_json = _chatgpt.filter_data(response_payload_json)
-          Logger.debug(f"Filtered data for file: {file_name}")
-          fill_empty_fields = _chatgpt.fill_other_empty_fields(filter_data_json, pdf_file_path)
-          Logger.debug(f"Filled empty fields for file: {file_name}")
-          self.insert_into_matrimonial(fill_empty_fields, file_name)
+          self.insert_into_matrimonial(chatgpt_response_json, file_name)
           Logger.debug(f"Inserted data into matrimonial database for file: {file_name}")
           
           # Move the file to the destination folder
-          self.move_file_to_folder(file_id, destination_folder_id, file_name)
+          # self.move_file_to_folder(file_id, destination_folder_id, file_name)
           Logger.debug(f"Moved file {file_name} to destination folder.")
       Logger.info("Bio datas extracted and added to database successfully.")
       return json.dumps({"message": "Bio datas extracted and added to database successfully."})
@@ -176,4 +183,5 @@ class GoogleDrive:
       return json.dumps({"status": "failed", "message": str(e)})
 
   
-  
+  def start_service(self):
+    self.extract_and_add_to_DB_MAIN()

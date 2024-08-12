@@ -16,9 +16,11 @@ class MatchMakingService:
         try:
             _matching = MatchmakingScore()
             db, cursorDb = createDbConnection()
+            Logger.info(f"*************** Starting Matchmaking Service ****************")
             
             cursorDb.execute(querys.GetAllQueuedMatchMaking())
             profileIds = cursorDb.fetchall()
+            Logger.info(f"Total Queued For Matchmaking: {len(profileIds)}")
             
             for data in profileIds:
                 profileId = data["ProfileId"]
@@ -73,4 +75,6 @@ class MatchMakingService:
             closeDbConnection(db, cursorDb)
             Logger.info("Closing database connection")
             
+    def start_service(self):
+        self.start_match_making()
             

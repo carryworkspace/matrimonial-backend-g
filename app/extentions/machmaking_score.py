@@ -41,6 +41,18 @@ class MatchmakingScore:
         closeDbConnection(conn, cursor)
         return result
     
+    def check_matchmaking_done_already(self, profile_id):
+        conn, cursor = createDbConnection()
+        Logger.info("Starting match making completed data")
+        query = f"SELECT * FROM MatrimonialProfile_M WHERE ProfileId = {profile_id} and matching_flag = 1"
+        cursor.execute(query)
+        Logger.debug(f"Executed SQL query: {query}")
+        result = cursor.fetchall()
+        # columns = [desc[0] for desc in self.cursor.description]
+        Logger.debug(f"Fetched result from database: {result}")
+        closeDbConnection(conn, cursor)
+        return result
+    
     def get_other_matrimonial_data_opposite_gender(self, user_gender: str, profile_id):
         conn, cursor = createDbConnection()
         Logger.info("Starting get_other_matrimonial_data_opposite_gender method")
@@ -352,12 +364,28 @@ class MatchmakingScore:
 
     def find_all_matches(self, profile_id, other_profiles = None):
         Logger.info(f"Starting find_all_matches for profile_id: {profile_id}")
-        user_preferences = self.get_user_preferences(profile_id)[0]
-        main_preferences = self.get_main_matrimonial_data(profile_id)[0]
+        db, cursorDb = createDbConnection()
+        user_preferences = self.get_user_preferences(profile_id)
+        if len(user_preferences) == 0:
+            Logger.warning(f"User Preferance data or Profile data not found for the user id: {profile_id}")
+            return pd.DataFrame()
+        
+        user_preferences = user_preferences[0]
+        
+        main_preferences = self.get_main_matrimonial_data(profile_id)
         if len(main_preferences)==0:
             print("NO User Found")
-            Logger.warning(f"No user preferences found for user ID: {profile_id}")
+            Logger.warning(f"No matrimonial found for user ID: {profile_id} or may be that already done matchmaking")
+            
+            matchedMaking = self.check_matchmaking_done_already(profile_id)
+            if len(matchedMaking) != 0:
+                Logger.warning(f"Match making already competed for this profile id: {profile_id} updating status in queued.")
+                cursorDb.execute(querys.UpdateMatchQueuedFlag(matched_flag=1, profileId=profile_id, processing_flag=1))
+                db.commit()  
             return pd.DataFrame()
+        
+        
+        main_preferences = main_preferences[0]
         
         user_gender = main_preferences['Gender'] if len(main_preferences) > 0 else ''
         
@@ -366,8 +394,6 @@ class MatchmakingScore:
         else:
             other_profile_id_list  = ', '.join(str(num) for num in other_profiles)
             other_preferences = self.get_other_matrimonial_data_for_ids(user_gender, other_profile_id_list)
-        
-        print("WORKING")
         
         print("TOtal itesm:", len(other_preferences))
         # return
@@ -386,41 +412,3 @@ class MatchmakingScore:
         Logger.debug(f"Sorted scores DataFrame: {sorted_scores_df}")
         return sorted_scores_df.to_dict(orient='records')
     
-    
-    
-    
-    
-    def view_detailed_profile(self, profile_id):
-        Logger.info(f"Viewing detailed profile data for profile_id: {profile_id}")
-        astro_query = f"SELECT * FROM AstrologicalProfileData WHERE Id = {profile_id}"
-        self.cursor.execute(astro_query)
-        profile_data = self.cursor.fetchone()
-        
-        if profile_data:
-            Logger.info(f"Detailed Astrological Data found for Profile ID: {profile_id}")
-            Logger.debug(f"Profile data: {profile_data}")
-        else:
-            Logger.warning(f"No detailed data found for Profile ID: {profile_id}")
-
-    def main(self, user_id):
-        sorted_scores_df = self.find_all_matches(user_id)
-        
-        while not sorted_scores_df.empty:
-            self.print_all_matches(sorted_scores_df)
-            
-            selected_profile_id = input("\nEnter the Profile ID to view detailed astrology data or 'q' to quit: ").strip()
-            
-            if selected_profile_id.lower() == 'q':
-                break
-            
-            try:
-                selected_profile_id = int(selected_profile_id)
-                if selected_profile_id in sorted_scores_df['ProfileId'].tolist():
-                    self.view_detailed_profile(selected_profile_id)
-                else:
-                    print("Invalid Profile ID. Please enter a valid Profile ID.")
-            except ValueError:
-                print("Invalid input. Please enter a valid Profile ID or 'q' to quit.")
-        
-        print("No more matches available. Exiting program...")
-        self.conn.close()

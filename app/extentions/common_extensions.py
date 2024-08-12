@@ -141,6 +141,9 @@ def decode_auth_token(auth_token):
     
     
 def get_random_name(phone):
+    
+    if is_null_or_empty(phone):
+        phone = '1234'
     # Define the character sets for first and last names
     Logger.debug(f"Generating random name for phone number: {phone}")
     nameKey = str(phone)

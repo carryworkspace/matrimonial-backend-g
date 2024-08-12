@@ -46,7 +46,15 @@ def perform_matchmaking():
             Logger.warning(f"Profile ID {profileId} does not exist")
             return jsonify({"status": "failed", "message": "User Invalid"}), 400
         
+        cursorDb.execute(querys.GetQueuedMatchMakingById(profileId))
+        queuedData = cursorDb.fetchall()
+        
+        if len(queuedData) != 0:
+            Logger.info(f"Profile Id: {profileId} added in queued successfully")
+            return json.dumps({"status": "success", "message": "already started"}), 200
+        
         cursorDb.execute(querys.AddMatchMakingQueued(profileId))
+        
         # Call the main method of MatchmakingScore to perform matchmaking
         # sorted_scores_df = _matching.find_all_matches(profileId)
         # # print(sorted_scores_df)
@@ -74,7 +82,7 @@ def perform_matchmaking():
         db.commit()
         Logger.info(f"profileId: {profileId} inserted successfully to queued match making table")
         
-        return json.dumps({"status": "success", "message": "match making in process"}), 200
+        return json.dumps({"status": "success", "message": "started"}), 200
         # return json.dumps(sorted_scores_df)
     
     except mysql.connector.Error as e:
@@ -105,6 +113,7 @@ def perform_matchmaking():
 @Router.route('/match-making-status', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def match_making_status():
+    db, cursorDb = createDbConnection()
     try:
         Logger.info("Starting match_making_status function")
         profileId :int = 0
@@ -117,7 +126,6 @@ def match_making_status():
         if profileId == 0:
             Logger.warning("Profile ID not provided or invalid")
             return jsonify({"status": "failed", "message": "Profile ID not provided"}), 400
-        db, cursorDb = createDbConnection()
         Logger.debug("Database connection established")
         cursorDb.execute(querys.GetMatchMakingCompleteNotification(profileId=profileId))
         Logger.debug(f"Executed database query to check matchmaking status for profileId: {profileId}")
@@ -142,8 +150,8 @@ def match_making_status():
         
         
         if len(user_exists) == 0:
-            return json.dumps({"status": "success", "message": "pending", 'profileId': profileId}), 200
-        return json.dumps({'status': 'success', 'message': 'complete', 'profileId': profileId}), 200
+            return json.dumps({"status": "success", "message": "pending", 'profileId': str(profileId)}), 200
+        return json.dumps({'status': 'success', 'message': 'complete', 'profileId': str(profileId)}), 200
     
     except mysql.connector.Error as e:
         Logger.error(f"MySQL Database Error: {e}")
@@ -171,8 +179,8 @@ def match_making_status():
 @cross_origin(supports_credentials=True)
 def match_making_result():
     
+    db, cursorDb = createDbConnection()
     user_match_making_results = []
-    match_making_result = {}
     try:
         Logger.info("Starting match_making_status function")
         mainProfileId :int = 0
@@ -185,7 +193,6 @@ def match_making_result():
         if mainProfileId == 0:
             Logger.warning("Profile ID not provided or invalid")
             return jsonify({"status": "failed", "message": "Profile ID not provided"}), 400
-        db, cursorDb = createDbConnection()
         Logger.debug("Database connection established")
         cursorDb.execute(querys.GetMatchMakingCompleteNotification(profileId=mainProfileId))
         Logger.debug(f"Executed database query to check matchmaking status for profileId: {mainProfileId}")
@@ -199,6 +206,7 @@ def match_making_result():
         print(matched_profiles)
         Logger.debug(f"Database query result for matched profiles: {len(matched_profiles)}")
         for match_profile in matched_profiles:
+            match_making_result = {}
             upload_folder = Config.PROFILE_PIC_PATH
             try:
                 otherProfileId = match_profile["OtherProfileId"]
@@ -209,10 +217,11 @@ def match_making_result():
                     Logger.info(f"Profile not found for profileId: {otherProfileId}")
                     continue
                 
-                print("PROFILEDIEDFDFDJ:LJSDLKFJKSDLJFLKSF:", profile, otherProfileId)
+                # print("PROFILEDIEDFDFDJ:LJSDLKFJKSDLJFLKSF:", profile, otherProfileId)
                 Logger.debug(f"Database query result Matrimonial: {len(profile)}")
                 
                 name = profile["Name"]
+                gender = profile["Gender"]
                 dob = profile["Dob"]
                 city = profile["City"]
                 subscribeToken = profile["Subscribe_Token"]
@@ -235,6 +244,7 @@ def match_making_result():
                 # filling dictionary for result
                 match_making_result["profileId"] = otherProfileId
                 match_making_result["name"] = name
+                match_making_result["gender"] = gender
                 match_making_result["age"] = age
                 match_making_result["height"] = final_height
                 match_making_result["location"] = location
@@ -280,8 +290,9 @@ def match_making_result():
                 db.rollback()
                 Logger.error(f"Error occurred while filling object for match making: {e}")
                 match_making_result["Error"] = f"Some error occurs for key: {e}"
-        
+            print("***************", match_making_result)
             user_match_making_results.append(match_making_result)
+            print("F*********FFF*FF", user_match_making_results)
             
         return json.dumps({'status': 'success', 'message': 'Matchmaking is Completed.', 'user_details': user_match_making_results}), 200
     
@@ -305,6 +316,60 @@ def match_making_result():
     finally:
         closeDbConnection(db, cursorDb)
         Logger.info("Closing database connection")
+        
+
+@Router.route('/download-bio-data', methods=['GET'])
+@cross_origin(supports_credentials=True)
+def download_pdf():
+    # doing someting else will continue after some time
+    db, cursorDb = createDbConnection()
+    user_match_making_results = []
+    bio_data_pdf_result = {}
+    try:
+        Logger.info("Starting match_making_status function")
+        profileId :int = 0
+        try:
+            profileId = int(request.args["profileId"])
+        except Exception as e:
+            Logger.error(f"Error occurred while parsing profileId: {e}")
+            profileId = 0
+        
+        if profileId == 0:
+            Logger.warning("Profile ID not provided or invalid")
+            return jsonify({"status": "failed", "message": "Profile ID not provided"}), 400
+        
+        cursorDb.execute(querys.GetBioDataPdfByProfileId(profileId))
+        bio_data_pdf = cursorDb.fetchall()
+        
+        if len(bio_data_pdf) == 0:
+            Logger.info(f"Did not get any pdf bio file for the profile id: {profileId} in database.")
+            return json.dumps({'status': 'success', 'message': 'pdf not found for the profile_id', 'pdf_file': None}), 200
+            
+            
+        
+    
+        return json.dumps({'status': 'success', 'message': 'pdf not found for the profile_id', 'pdf_file': None}), 200
+    except mysql.connector.Error as e:
+        Logger.error(f"MySQL Database Error: {e}")
+        return json.dumps({"status": "failed", 'message': "some error occurs, in query execution"}), 400
+    except json.JSONDecodeError as jd:
+        Logger.error(f"JSON Decode Error: {jd}")
+        db.rollback()
+        return json.dumps({"status": "failed", 'message': "Invalid data format of json"}), 400
+    
+    except ValueError as ve:
+        Logger.error(f"Value Error: {ve}")
+        db.rollback()
+        return json.dumps({"status": "failed", 'message': "Invalid data format"}), 400
+
+    except Exception as e:
+        Logger.error(f"Unexpected Error: {e}")
+        db.rollback()
+        return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
+    finally:
+        closeDbConnection(db, cursorDb)
+        Logger.info("Closing database connection")
+
 
 
 # @Router.route('/astro', methods=['GET'])

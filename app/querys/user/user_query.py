@@ -19,6 +19,10 @@ def CheckUserEmailExist(email):
     Logger.debug(f"Generating SQL query to check user email existence for email: {email}" )
     return f"select * from Users_M where Email = '{email}'"
 
+def GetUserLoginDetailsByIdAndPassword(id: int, password: str):
+    Logger.debug(f"Generating SQL query to get login details" )
+    return f"select * from Users_M where Id = {id} and Password = '{password}'"
+
 def CheckMatrimonialProfileExist(profileId):
     Logger.debug(f"Generating SQL query to check matrimonial profile existence for profileId: {profileId}")
     return f"select * from MatrimonialProfile_M where ProfileId = {profileId}"
@@ -63,6 +67,10 @@ def GetAllQueuedMatchMaking():
     Logger.debug(f"Generating Sql query to get queued match making profiles")
     return f"select ProfileId from MatchMakingQueued_M where matched = 0"
 
+def GetQueuedMatchMakingById(profileId: int):
+    Logger.debug(f"Generating Sql query to get queued match making profiles")
+    return f"select ProfileId from MatchMakingQueued_M where ProfileId = {profileId}"
+
 def GetProfileIdsForMatchMaking(profileIds):
     Logger.debug(f"Generating sql query to get profile ids which not done match making.")
     return f"SELECT * FROM MatchedProfiles_M where MainProfileId not in ({profileIds});"
@@ -75,6 +83,10 @@ def GetAllMatrimonialData():
 def GetMatchedProfiles(mainProfileId: int):
     Logger.debug(f"Generating SQL query to get matrimonial data ")
     return f"select * from MatchedProfiles_M where MainProfileId= {mainProfileId} and IsExpired = 0 order by MatchScore desc"
+
+def GetBioDataPdfByProfileId(profileId: int):
+    Logger.debug(f"Generating SQL query to get bio data pdf for profile Id {profileId}")
+    return f"select * from BioDataPdfFiles_M where ProfileId = {profileId} and IsActive = 1"
 
 # Insert
 
@@ -225,13 +237,17 @@ def UpdateBioDataPdfFile():
 def AddUser(username: str, phone: int, googleAuth: str, truecallerAuth: str, email:str):
     Logger.debug("Generated SQL query for adding user")
     return f"""insert into Users_M (Username, PhoneNumber, GoogleAuthToken, TruecallerAuthToken, IsActive, IsAdmin, Email)
-            values ('{username}', {phone}, '{googleAuth}', '{truecallerAuth}', 1, 0, '{email}')"""
+            values ('{username}', '{phone}', '{googleAuth}', '{truecallerAuth}', 1, 0, '{email}')"""
 
 
 #  update section
 def UpdateUsername(phone: str, username: str):
     Logger.debug("Generated SQL query for updating username")
     return f"update Users_M set Username = '{username}' where PhoneNumber = '{phone}'"
+
+def UpdatePassword(userId: int, password: str):
+    Logger.debug("Generated SQL query for updating password")
+    return f"update Users_M set Password = '{password}' where Id = {userId}"
 
 def MakeAdmin(phone: int):
     Logger.debug("Generated SQL query for making user admin")
@@ -411,7 +427,10 @@ def UpdateMatrimonialUserDetails():
     Address = %(address)s,
     PhoneNumber = %(phoneNumber)s,
     Email = %(email)s,
-    AboutMe = %(aboutMe)s
+    MaritalStatus = %(maritalStatus)s,
+    Gender = %(gender)s,
+    Dob = %(dob)s,
+    HighestDegree = %(education)s
 WHERE
     ProfileId = %(profileId)s;"""
 

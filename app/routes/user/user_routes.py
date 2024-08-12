@@ -257,6 +257,86 @@ def google_auth():
     finally:
         closeDbConnection(db, cursorDb)
         Logger.info("Database connection closed")
+        
+
+@Router.route('/loginWithUserID', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def login_with_user_id():
+    db, cursorDb = createDbConnection()
+    data = request.get_json()
+    Logger.debug(f"Received JSON data: {data}")
+    try:
+        userIdError = validate_string_data(data, 'userId')
+        if userIdError != None:
+            Logger.error(f"Validation failed for email: {userIdError}")
+            return userIdError
+        
+        userId: int = int(data['userId'])
+        Logger.info(f"userId : {userId}")
+        
+        password: str = data['password']
+        Logger.info(f"password: {password}")
+
+    except Exception as e:
+        Logger.error(f"Error occurred during initial validation: {e}")
+        try:
+            return json.dumps({"status": "failed", 'message': str(e)}), 400
+        except Exception as e:
+            Logger.error(f"Error occured: {e}")
+            return json.dumps({"status": "failed", 'message': "some error ocurs. Please contact to developer"}), 400
+
+    if is_null_or_empty(userId):
+        Logger.error("user id is null or empty")
+        return json.dumps({"status": "failed", 'message': "user id cannot be null or empty"}), 400
+    
+    if is_null_or_empty(password):
+        Logger.error("password is null or empty")
+        return json.dumps({"status": "failed", 'message': "password cannot be null or empty"}), 400
+    
+    try:
+        cursorDb.execute(user_query.GetUserLoginDetailsByIdAndPassword(userId, password))
+        userDetails = cursorDb.fetchall()
+        print(userDetails)
+        if len(userDetails)!= 0:
+            token = encode_auth_token(userId)   
+            username = userDetails[0]["Username"]
+            cursorDb.execute(user_query.GetProfileDetails(userId))
+            profileDetails = cursorDb.fetchall()
+            profileId = profileDetails[0]["Id"]
+            db.commit()
+            Logger.info(f"User Found for user id {userId}")
+            return json.dumps({'status': "success", "token": token, "username": username, "userId": userId, "profileId": profileId, "message": "User found successfully", "created": False}), 200
+        
+        else:
+            return json.dumps({'status': "failed", "message": "User not found"}), 404
+            
+        
+    except mysql.connector.Error as e: 
+            Logger.error(f"MySQL Error: {e}")
+            db.rollback()
+            return json.dumps({"status": "failed", 'message': "some error occurs, in query execution"}), 400
+    
+    except ValueError as ve:
+        Logger.error(f"ValueError: {ve}")
+        db.rollback()
+        return json.dumps({"status": "failed", 'message': "Invalid data format"}), 400
+    except KeyError as key:
+        Logger.error(f"KeyError: {key}")
+        db.rollback()
+        return json.dumps({"status": "failed", "message": "no otp found for this user. Please send otp first"})
+    except Exception as e:
+        tb = traceback.extract_tb(e.__traceback__)
+        filename, line_number, func_name, text = tb[-1]
+        traceback.print_exc()
+        
+        print(f"Error: {e}")
+        Logger.error(f"Unexpected Error: {e}")
+        db.rollback()
+        return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
+    
+    finally:
+        closeDbConnection(db, cursorDb)
+        Logger.info("Database connection closed")
 
 # uplaod bio data
 @Router.route('/upload-biodata', methods=['POST'])
@@ -345,6 +425,7 @@ def photo_gallery():
         Logger.error(f"Error uploading file: {e}")
         return json.dumps({"status": "failed", "message": "some errror occurs"}), 400
 
+# user details
 @Router.route('/user-details', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def get_user_details():
@@ -382,6 +463,20 @@ def get_user_details():
         userDetails = cursorDb.fetchall()
         
         profileId = userDetails[0]["Id"]
+        requestFileName = userDetails[0]["ProfilePicture"]
+        Logger.debug(f"Fetched profile picture filename: {requestFileName}")
+        profile_path = os.path.join(upload_folder, requestFileName)
+        
+        imageData = {'image': []}
+        try:
+            with open(profile_path, 'rb') as file:
+                # Read the file content and convert it into a byte array
+                file_content = file.read()
+                byte_array = bytearray(file_content)
+                byte_array_list = list(byte_array)
+                imageData["image"] = byte_array_list
+        except FileNotFoundError:
+            Logger.error("Image not found error")
         
         cursorDb.execute(user_query.GetMatrimonialData(profileId))
         matrimonial_details = cursorDb.fetchone()
@@ -405,19 +500,19 @@ def get_user_details():
         
         
         try:
-            phoneNumber: int = int(userDetails[0]["PhoneNumber"])
+            phoneNumber: str = str(userDetails[0]["PhoneNumber"])
             Logger.warning(f"Phone Number: {phoneNumber}")
         except Exception as e:
             Logger.error("Value Error Phone Number not Available in user details")
             Logger.warning(f"Phone Number IN Matrimonial: {matrimonial_details['PhoneNumber']}")
             
-            phoneNumber: int = int(matrimonial_details['PhoneNumber'])
+            phoneNumber: str = str(matrimonial_details['PhoneNumber'])
             Logger.warning(f"Phone Number: {phoneNumber}")
             
         db.commit()
         Logger.info(f"User details retrieved successfully for UserID: {userId}")
         Logger.debug(f"username: {username} | matri_name: {name} | phoneNumber: {phoneNumber} | email: {email} | sub_caste: {sub_caste} | weight: {weight} | height: {height} | address: {address} | about_me: {about_me} | subscribe_token: {subscribe_Token}")
-        return json.dumps({"status": "success", "username": username, "matri_name": name, "age": age, "phoneNumber" : phoneNumber, "email": email,"gender": gender, "dob": dob , "marital_status": marital_status,"sub_caste": sub_caste, "weight": weight, "height": height,"education": education ,"address": address, "about_me": about_me, "subscribe_token": subscribe_Token}), 200
+        return json.dumps({"status": "success", "username": username, "matri_name": name, "age": age, "phoneNumber" : phoneNumber, "email": email,"gender": gender, "dob": dob , "marital_status": marital_status,"sub_caste": sub_caste, "weight": weight, "height": height,"education": education ,"address": address, "about_me": about_me, "subscribe_token": subscribe_Token, "profile_picture": imageData['image']}), 200
         
     except mysql.connector.Error as e: 
             Logger.error(f"MySQL Error: {e}")
@@ -439,6 +534,7 @@ def get_user_details():
         closeDbConnection(db, cursorDb)
         Logger.info("Database connection closed")
 
+#edit user details
 @Router.route('/edit-user-details', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def update_matrimonial_profile():
@@ -471,7 +567,6 @@ def update_matrimonial_profile():
         cursorDb.execute(user_query.GetMatrimonialProfileByProfileId(model.profileId))
         matrimonial_profile = cursorDb.fetchall()
         if len(matrimonial_profile) != 0:
-            print("PROFILES", matrimonial_profile)
             Logger.info("Matrimonial profile exists, updating the profile.")
             cursorDb.execute(user_query.UpdateMatrimonialUserDetails(), model.__dict__)
             print("ROW AFFECT")
@@ -480,7 +575,7 @@ def update_matrimonial_profile():
             return json.dumps({"status": "success", "message": "User Details Data Updated Successfully"})
         Logger.info("User Details Profile Not Exsist Successfully")
         db.commit()
-        return json.dumps({"status":"failed", "message": "This profile id does not exists"}), 400
+        return json.dumps({"status":"failed", "message": "This profile id does not exists in matrimonial"}), 400
         
     except mysql.connector.Error as e: 
             Logger.error(f"MySQL Error: {e}")
@@ -515,7 +610,7 @@ def chatgpt_api():
     # response = chatgpt_pdf_to_json("D:\\Ayushi Biodata.pdf")
     return response
 
-
+    
 @Router.route('/authorization', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def authorization_check():
