@@ -11,7 +11,7 @@ from .pdf_extractor import PdfExtracter
 from .chatgpt import Chatgpt
 from app.extentions.logger import Logger 
 import socket
-
+import re
 users_otp = {}
 query_payload = payload = {
     "name": "",
@@ -163,6 +163,22 @@ def get_random_name(phone):
 
     return full_name
 
+def get_phone_number(phone:str):
+    try:
+        
+        if len(phone) > 15:
+            if phone.__contains__("+91"):
+                phone = phone.replace("+91", "")
+            parts = re.split(r"[,/]", phone)
+            return int(parts[0])
+        else:
+            return int(phone)
+    except:
+        try:
+            return int(phone.replace("+91", ""))
+        except:
+            return 0
+
 def generate_random_number(length: int = 4):
     if length <= 0:
         raise ValueError("Length must be a positive integer.")
@@ -268,6 +284,9 @@ def chatgpt_pdf_to_json(pdfFilePath) -> str:
     payload = query_payload
     chatgpt = Chatgpt()
     pdfText = PdfExtracter.extract_text_from_pdf_url(pdfFilePath)
+    if len(pdfText) < 100:
+        Logger.error("PDF text is too short to process")
+        return ""
     Logger.debug(f"Extracted PDF text: {pdfText}")
     response = chatgpt.chat(pdfText, payload)
     Logger.info(f"Data Fetched: {response}")

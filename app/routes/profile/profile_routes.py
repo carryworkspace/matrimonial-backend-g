@@ -210,7 +210,7 @@ def get_profile_picture():
                 responseData["filename"] = requestFileName
         except FileNotFoundError:
             Logger.error("Image not found error")
-            return json.dumps({'status': 'failed','message': 'Image not found'})
+            return json.dumps({'status': 'failed','message': 'Image not found'}), 400
         
         # return send_file(profile_path, mimetype='image/png, image/jpeg')
         Logger.info(f"Profile picture retrieved successfully for userId: {userId}")

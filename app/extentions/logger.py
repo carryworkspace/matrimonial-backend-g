@@ -11,25 +11,30 @@ log_format = (
 )
 
 LOG_FILE_PATH = Config.LOG_FILE_PATH
+# LOG_FILE_PATH = 'logs/backend.log' 
 
 class Logger:
     
     @staticmethod
-    def setup_logger():
+    def setup_logger(): 
         # Ensure the log folder exists
-        if not os.path.exists(LOG_FILE_PATH):
-            os.makedirs(LOG_FILE_PATH)
+        log_dir = os.path.dirname(LOG_FILE_PATH)
+        print(f"Log directory: {log_dir}")
         
-        # Check if logger is already configured
-        if logger._core.handlers:
-            return
+        if not os.path.exists(log_dir):
+            print("Directory does not exist, creating...")
+            os.makedirs(log_dir)
+        else:
+            print("Directory exists.")
 
-        # Remove all existing handlers
+        print("Configuring logger...")
         logger.remove()
 
         # Add a new handler for file logging
         logger.add(sys.stdout, format=log_format)
         logger.add(LOG_FILE_PATH, format="{time} | {level} | {message}", rotation="1 MB", retention="10 days")
+        print(f"Logging to: {LOG_FILE_PATH}")
+
 
     @staticmethod
     def error(text):
@@ -51,4 +56,5 @@ class Logger:
     def warning(text):
         logger.warning(text)
 
+# Set up the logger when the script is loaded
 Logger.setup_logger()

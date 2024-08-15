@@ -203,7 +203,7 @@ def google_auth():
         userDetails = cursorDb.fetchall()
         if(len(userDetails)==0):
             username = get_random_name(email.split("@")[0])
-            insert_user_query = user_query.AddUser(username, 'null', 'null', 'null', email)
+            insert_user_query = user_query.AddUser(username, 0, 'null', 'null', email)
             Logger.info(f"Inserting new user with query: {insert_user_query}")
             cursorDb.execute(insert_user_query)
             new_user_id = cursorDb.lastrowid

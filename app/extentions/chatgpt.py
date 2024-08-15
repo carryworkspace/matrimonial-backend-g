@@ -5,6 +5,8 @@ from openai import OpenAI
 from config import Config
 from app.extentions.pdf_extractor import PdfExtracter
 from app.extentions.logger import Logger 
+from app.utils import contains_any
+import json
 
 
 class Chatgpt:
@@ -16,7 +18,7 @@ class Chatgpt:
         if self.tries == 3:
             self.tries = 0
         
-        msg = f"please read this text {text} and fill the provided json payload : {payload} and correct the formatting of dob - yyyy-MM-dd and height in cm from fts and time in 24 hours format and fill subcaste withh help of name and please fill gender using name only and please fill the state city country and address and mobile or phone number mandatory and fill all fields of the payload json and if subCaste not provided leave empty and return json content only"
+        msg = f"please read this text {text} and fill the provided json payload : {payload} and correct the formatting of dob - yyyy-MM-dd and height in cm from fts and time in 24 hours format and fill subcaste withh help of name and please fill gender using name only and please fill the state city country and address and mobile or phone number mandatory and fill all fields of the payload json and if subCaste not provided leave empty and  and return json content only"
         Logger.info("Chatgpt Requesting your message..... waiting for response")
         response = self.client.chat.completions.create(
         model="gpt-3.5-turbo-16k",
@@ -39,12 +41,16 @@ class Chatgpt:
         Logger.info("Received response from OpenAI")
         Logger.debug(f"Response From GPT: {chatgpt_response}")
         
+        try:
+            json.loads(chatgpt_response)
+            exeption = False
+        except:
+            exeption = True
         
-        while chatgpt_response.lower().__contains__("sorry,") and self.tries < 3:
+        errorList = ["sorry, ", "i'm sorry, ", "i am sorry, ", "apologize"]
+        while (contains_any(chatgpt_response.lower(), errorList) or exeption) and self.tries < 3:
             self.tries += 1
             time.sleep(2)
-            chatgpt_response = self.chat(text, payload)
-            Logger.debug(f"Error in response retrying - {self.tries}")
         return chatgpt_response
     
 

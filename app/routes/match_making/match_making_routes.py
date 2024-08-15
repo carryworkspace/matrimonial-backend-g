@@ -323,8 +323,8 @@ def match_making_result():
 def download_pdf():
     # doing someting else will continue after some time
     db, cursorDb = createDbConnection()
-    user_match_making_results = []
     bio_data_pdf_result = {}
+    upload_folder = Config.BIO_DATA_PDF_PATH
     try:
         Logger.info("Starting match_making_status function")
         profileId :int = 0
@@ -343,12 +343,37 @@ def download_pdf():
         
         if len(bio_data_pdf) == 0:
             Logger.info(f"Did not get any pdf bio file for the profile id: {profileId} in database.")
-            return json.dumps({'status': 'success', 'message': 'pdf not found for the profile_id', 'pdf_file': None}), 200
+            return json.dumps({'status': 'failed', 'message': 'pdf not found for the profile_id', 'pdf_file': None}), 200
+                    
+        else:
+            requestFileName = bio_data_pdf[0]["PdfName"]
+            Logger.debug(f"Fetched profile picture filename: {requestFileName}")
+            pdf_path = os.path.join(upload_folder, requestFileName)
             
+            if not os.path.exists(pdf_path):
+                Logger.warning(f"Pdf not found on server for the profile id: {profileId}")
+                bio_data_pdf_result["picture"] = None
+                        
+            db.commit()
             
+            try:
+                with open(pdf_path, 'rb') as file:
+                    # Read the file content and convert it into a byte array
+                    file_content = file.read()
+                    byte_array = bytearray(file_content)
+                    byte_array_list = list(byte_array)
+                    bio_data_pdf_result["status"] = "success"
+                    bio_data_pdf_result["message"] = f"pdf found for the profile_id: {profileId}"
+                    bio_data_pdf_result["filename"] = requestFileName
+                    bio_data_pdf_result["pdf_file"] = byte_array_list
+                return json.dumps(bio_data_pdf_result), 200
+                    
+            except FileNotFoundError:
+                Logger.error("Pdf not found error")
+                bio_data_pdf_result["pdf_file"] = None    
         
     
-        return json.dumps({'status': 'success', 'message': 'pdf not found for the profile_id', 'pdf_file': None}), 200
+        return json.dumps({'status': 'failed', 'message': 'pdf not found for the profile_id in Db', 'pdf_file': None}), 200
     except mysql.connector.Error as e:
         Logger.error(f"MySQL Database Error: {e}")
         return json.dumps({"status": "failed", 'message': "some error occurs, in query execution"}), 400

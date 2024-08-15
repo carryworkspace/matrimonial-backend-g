@@ -189,9 +189,17 @@ class MatchmakingScore:
                         # Degree score
                         if attr == "HighestDegree":
                             
-                            eduction = user_dict.get("Education").lower()[0]
-                            other_education = profile.get("HighestDegree").lower()[0]
-                            if eduction == other_education:
+                            education = user_dict.get("Education")
+                            other_education = profile.get("HighestDegree")
+                            
+                            if education == None or other_education == None:
+                                Logger.warning(f"User eduction : {education} or Other eduction : {other_education} may be null or empty skiping education matching.")
+                                continue
+                            
+                            education = education.lower()[0]
+                            other_education = other_education.lower()[0]
+                            
+                            if education == other_education:
                                 properties_mached.append(attr)
                                 score += 1
                                 Logger.debug(f"HighestDegree matched for profile {profile['ProfileId']}, score incremented")
@@ -202,10 +210,21 @@ class MatchmakingScore:
                         # Occupation score
                         if attr == "Occupation":
                             
-                            preferredProfession = user_dict["PreferredProfession"]
-                            occupation = profile.get("Occupation")
+                            preferredProfession: str = user_dict["PreferredProfession"]
+                            occupation: str = profile.get("Occupation")
+                            
+                            if occupation == None or preferredProfession == None:
+                                Logger.warning(f"User occupation : {user_hobbies} or Other occupation : {occupation} may be null or empty skiping occupation matching.")
+                                continue
+                            
                             properties_mached.append(attr)
                             count = Chatgpt().matching_job_title(preferredProfession, occupation)
+                            if count == 0:
+                                if preferredProfession.__contains__(occupation):
+                                    count = 1
+                                elif occupation.__contains__(preferredProfession):
+                                    count = 1
+                                
                             Logger.debug(f"Matching job titles count: {count}")
                             print("count", count)
                             score += count
@@ -219,6 +238,11 @@ class MatchmakingScore:
                             
                             user_hobbies: str = user_dict["Hobbies"]
                             other_hobbies: str = profile.get("Hobbies")
+                            
+                            if user_hobbies == None or other_hobbies == None:
+                                Logger.info(f"User Hobbies : {user_hobbies} or Other Hobbies may be null or empty : {other_hobbies} skiping hobbies matching.")
+                                continue
+                            
                             if other_hobbies.__contains__(user_hobbies):
                                 properties_mached.append(attr)
                                 score += 1
@@ -399,8 +423,8 @@ class MatchmakingScore:
         # return
         res = MultiProcess()
         
-        scores = res.process(self.calculate_scores,main_preferences, other_preferences, user_preferences)
-        # scores = self.calculate_scores(main_preferences, other_preferences, user_preferences)
+        # scores = res.process(self.calculate_scores,main_preferences, other_preferences, user_preferences)
+        scores = self.calculate_scores(main_preferences, other_preferences, user_preferences)
         print(scores)
         Logger.info(f"Scores calculated for profile_id: {profile_id}")
         Logger.debug(f"Calculated scores: {scores}")

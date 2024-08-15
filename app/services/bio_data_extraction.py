@@ -12,7 +12,7 @@ from app.routes import createDbConnection, closeDbConnection
 from app.models.matrimonial_profile_model import MatrimonialProfileModel
 from app.models.bio_data_pdf_model import BioDataPdfModel
 from app.querys.user import user_query as querys
-from app.extentions.common_extensions import chatgpt_pdf_to_json, query_payload, get_project_root, generate_random_number, get_random_name
+from app.extentions.common_extensions import chatgpt_pdf_to_json, query_payload, get_project_root, generate_random_number, get_random_name, get_phone_number, is_null_or_empty
 from app.extentions.chatgpt import Chatgpt
 from config import Config
 from app.extentions.logger import Logger
@@ -95,15 +95,17 @@ class GoogleDrive:
       
       # check for N/A values and replace them with empty string
       for key in dataDict.keys():
-        Logger.debug("JSON data loaded successfully.")
-        if "N/A" in dataDict[key]:
+        Logger.debug(f"JSON data loaded successfully for {key}.")
+        if "N/A" in str(dataDict[key]):
           dataDict[key] = ""
           Logger.debug(f"Replaced 'N/A' with empty string in key: {key}")
           
           #user already exist
       # if self.profile_exists(cursorDb, dataDict['Name'], dataDict['PhoneNumber']):
       #   return "User already exists."
-      phoneNumber = dataDict['phoneNumber']
+      phoneNumberStr: str = str(dataDict['phoneNumber'])
+      phoneNumber = get_phone_number(phoneNumberStr)
+      
   
       username = get_random_name(phoneNumber)
       password = generate_random_number(length=8)
@@ -114,6 +116,7 @@ class GoogleDrive:
       cursorDb.execute(querys.UpdatePassword(new_user_id, password))
       cursorDb.execute(querys.AddProfileForUser(new_user_id))
       new_profile_id = cursorDb.lastrowid
+      dataDict["phoneNumber"] = phoneNumber
           
       dataDict["profileId"] = new_profile_id
       Logger.debug(f"Generated profile ID: {dataDict['profileId']}")
@@ -122,7 +125,7 @@ class GoogleDrive:
       pdf_model = BioDataPdfModel.fill_model({"profileId": model.profileId, "pdfName": fileName})
       Logger.debug("Filled MatrimonialProfileModel and BioDataPdfModel.")
       matrimonialData = model.__dict__
-      matrimonialData["subscribeToken"] = f"{matrimonialData['name'].replace(' ', '_')}_{matrimonialData['phoneNumber'].replace(' ', '_')}"
+      matrimonialData["subscribeToken"] = f"{str(matrimonialData['name']).replace(' ', '_')}_{str(matrimonialData['phoneNumber']).replace(' ', '_')}"
       cursorDb.execute(querys.AddMatrimonialProfile(), matrimonialData)
       Logger.debug("Executed query to insert MatrimonialProfileModel.")
       cursorDb.execute(querys.AddBioDataPdfFile(), pdf_model.__dict__)
@@ -138,8 +141,8 @@ class GoogleDrive:
   def extract_and_add_to_DB_MAIN(self):
     Logger.debug("Starting extract_and_add_to_DB_MAIN method.")
     # IDs of the source and destination folders
-    source_folder_id = Config.DESTINATION_FOLDER
-    destination_folder_id = Config.SOURCE_FOLDER
+    source_folder_id = Config.SOURCE_FOLDER
+    destination_folder_id = Config.DESTINATION_FOLDER
     save_path = Config.BIO_DATA_PDF_PATH
     
     
@@ -165,16 +168,31 @@ class GoogleDrive:
           # Download the PDF file
           self.download_file(file_id, file_name, save_path)
           Logger.debug(f"Downloaded file: {file_name}")
-          _chatgpt = Chatgpt()
+          # _chatgpt = Chatgpt()
           pdf_file_path = os.path.join(save_path, file_name)
           
           chatgpt_response_json = chatgpt_pdf_to_json(pdf_file_path)
           Logger.debug(f"Converted PDF to JSON for file: {file_name}")
+          
+          if is_null_or_empty(chatgpt_response_json) or chatgpt_response_json.__contains__('sorry') or chatgpt_response_json.__contains__('apologize'):
+            Logger.warning(f"No data extracted from pdf file: {file_name}")
+            self.move_file_to_folder(file_id, Config.ERROR_FOLDER, file_name)
+            Logger.debug(f"Moved file {file_name} to Error_pdfs folder.")
+            continue
+          
+          dataDict = json.loads(chatgpt_response_json)
+          phoneNumber = str(dataDict['phoneNumber'])
+          if is_null_or_empty(phoneNumber):
+            Logger.warning(f"No phone number found in the extracted data for file: {file_name}")
+            self.move_file_to_folder(file_id, Config.ERROR_FOLDER, file_name)
+            Logger.debug(f"Moved file {file_name} to Error_pdfs folder.")
+            continue
+          
           self.insert_into_matrimonial(chatgpt_response_json, file_name)
           Logger.debug(f"Inserted data into matrimonial database for file: {file_name}")
           
           # Move the file to the destination folder
-          # self.move_file_to_folder(file_id, destination_folder_id, file_name)
+          self.move_file_to_folder(file_id, destination_folder_id, file_name)
           Logger.debug(f"Moved file {file_name} to destination folder.")
       Logger.info("Bio datas extracted and added to database successfully.")
       return json.dumps({"message": "Bio datas extracted and added to database successfully."})
@@ -184,4 +202,7 @@ class GoogleDrive:
 
   
   def start_service(self):
-    self.extract_and_add_to_DB_MAIN()
+    try: 
+      self.extract_and_add_to_DB_MAIN()
+    except Exception as e:
+      Logger.error(f"An error occurred while starting the service. {e}")

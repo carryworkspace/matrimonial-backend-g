@@ -5,6 +5,7 @@ import json
 from app.models.match_profile_model import MatchProfileModel
 from app.querys.user import user_query as querys
 import mysql.connector
+import time
 
 class MatchMakingService:
     def __init__(self) -> None:
@@ -36,14 +37,15 @@ class MatchMakingService:
                     Logger.info("Matchmaking has been already completed for this Profile")
                     return json.dumps({"status": "success", "message": "Match making has been already completed for this Profile",}), 200
                 
+                db, cursorDb = createDbConnection() 
+                Logger.debug("Database connection created for inserting match data")
                 for match in sorted_scores_df:
                     model = MatchProfileModel.fill_model(match)
-                    Logger.debug(f"Model data filled for match: {len(model.__dict__.keys())}")
+                    Logger.debug(f"Model data filled for match: {len(model.__dict__.keys())} with score of : {model.matchScore} and MainProfile: {model.mainProfileId} and Other Profile: {model.profileId}")
                     model.mainProfileId = profileId
-                    db, cursorDb = createDbConnection() 
-                    Logger.debug("Database connection created for inserting match data")
                     
                     cursorDb.execute(querys.AddMatchedProfile(), model.__dict__)
+                    db.commit()
                     Logger.debug("Executed query to add matched profile")
                     
                 cursorDb.execute(querys.UpdateMatchFlag(1, profileId))
@@ -76,5 +78,9 @@ class MatchMakingService:
             Logger.info("Closing database connection")
             
     def start_service(self):
-        self.start_match_making()
+        while True:
+            self.start_match_making()
+            sleepTime = 60 * 10
+            Logger.warning(f"Waiting for {sleepTime} seconds before checking again")
+            time.sleep(sleepTime)  # Wait for 10 minute before checking again
             
