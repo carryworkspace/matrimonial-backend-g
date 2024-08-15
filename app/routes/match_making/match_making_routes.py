@@ -19,7 +19,7 @@ import traceback
 @Router.route('/matchmaking', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def perform_matchmaking():
-    
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = createDbConnection()
     # data = request.get_json()  # Get JSON data from request body
     # _matching = MatchmakingScore()
@@ -81,7 +81,7 @@ def perform_matchmaking():
         
         db.commit()
         Logger.info(f"profileId: {profileId} inserted successfully to queued match making table")
-        
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         return json.dumps({"status": "success", "message": "started"}), 200
         # return json.dumps(sorted_scores_df)
     
@@ -113,6 +113,7 @@ def perform_matchmaking():
 @Router.route('/match-making-status', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def match_making_status():
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = createDbConnection()
     try:
         Logger.info("Starting match_making_status function")
@@ -148,7 +149,7 @@ def match_making_status():
         # height_str = height_ft + " "+ height_inches
         # print(height_ft, height_inches, name)
         
-        
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         if len(user_exists) == 0:
             return json.dumps({"status": "success", "message": "pending", 'profileId': str(profileId)}), 200
         return json.dumps({'status': 'success', 'message': 'complete', 'profileId': str(profileId)}), 200
@@ -178,7 +179,7 @@ def match_making_status():
 @Router.route('/match-making-result', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def match_making_result():
-    
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = createDbConnection()
     user_match_making_results = []
     try:
@@ -290,10 +291,9 @@ def match_making_result():
                 db.rollback()
                 Logger.error(f"Error occurred while filling object for match making: {e}")
                 match_making_result["Error"] = f"Some error occurs for key: {e}"
-            print("***************", match_making_result)
             user_match_making_results.append(match_making_result)
-            print("F*********FFF*FF", user_match_making_results)
             
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         return json.dumps({'status': 'success', 'message': 'Matchmaking is Completed.', 'user_details': user_match_making_results}), 200
     
     except mysql.connector.Error as e:
@@ -321,6 +321,7 @@ def match_making_result():
 @Router.route('/download-bio-data', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def download_pdf():
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     # doing someting else will continue after some time
     db, cursorDb = createDbConnection()
     bio_data_pdf_result = {}
@@ -366,6 +367,7 @@ def download_pdf():
                     bio_data_pdf_result["message"] = f"pdf found for the profile_id: {profileId}"
                     bio_data_pdf_result["filename"] = requestFileName
                     bio_data_pdf_result["pdf_file"] = byte_array_list
+                Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
                 return json.dumps(bio_data_pdf_result), 200
                     
             except FileNotFoundError:

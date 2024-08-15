@@ -28,7 +28,7 @@ def authorize_request():
     """Verifying each request to be authrized
     """
     if 'request_otp' not in request.endpoint and 'verify_otp' not in request.endpoint:  # Exclude the 'login' endpoint from authorization check
-        Logger.info("Checking request for authorization")
+        Logger.info("Request authorization check")
         # error_response = check_request_authorized(request)
         # if error_response:
             # return error_response
@@ -37,11 +37,13 @@ def authorize_request():
 @Router.route('/verify-otp', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def verify_otp():
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     """verify user phone number
 
     Returns:
         _type_: _json_string_
     """
+    
     db, cursorDb = createDbConnection()
     Logger.debug("Database connection established.")
     data = request.get_json()
@@ -93,6 +95,7 @@ def verify_otp():
             # del users_otp[phone]
             db.commit()
             Logger.info(f"Sending response data")
+            Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
             return json.dumps({'status': "success", "token": token, "username": username, "userId": new_user_id, "profileId": new_profile_id, "message": "User created successfully", "created": True}), 200
         
         else:
@@ -105,6 +108,7 @@ def verify_otp():
             # del users_otp[phone]
             db.commit()
             Logger.info("User already exists.")
+            Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
             return json.dumps({'status': "success", "token": token, "username": username, "userId": old_user_id, "profileId": oldProfileId, "message": "User already exist",  "created": False}), 200
         
     except mysql.connector.Error as e: 
@@ -135,6 +139,8 @@ def verify_otp():
 @Router.route('/request-otp', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def request_otp():
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
+    
     data = request.get_json()
     Logger.debug(f"Received JSON data: {data}")
     try:
@@ -169,6 +175,7 @@ def request_otp():
 @Router.route('/google-auth', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def google_auth():
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = createDbConnection()
     data = request.get_json()
     Logger.debug(f"Received JSON data: {data}")
@@ -213,6 +220,7 @@ def google_auth():
             # del users_otp[phone]
             db.commit()
             Logger.info(f"New user created successfully. User ID: {new_user_id}")
+            Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
             return json.dumps({'status': "success", "token": token, "username": username, "userId": new_user_id, "profileId": new_profile_id, "message": "User created successfully", "created": True}), 200
         
         else:
@@ -228,6 +236,7 @@ def google_auth():
             # filename, line_number, func_name, text = tb[-1]
             # traceback.print_exc()
             # Logger.info(f"User already exists. User ID: {oldUserId}, Profile ID: {oldProfileId}")
+            Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
             return json.dumps({'status': "success", "token": token, "username": username, "userId": oldUserId, "profileId": oldProfileId, "message": "User already exist",  "created": False}), 200
             
         
@@ -262,6 +271,7 @@ def google_auth():
 @Router.route('/loginWithUserID', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def login_with_user_id():
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = createDbConnection()
     data = request.get_json()
     Logger.debug(f"Received JSON data: {data}")
@@ -305,6 +315,7 @@ def login_with_user_id():
             profileId = profileDetails[0]["Id"]
             db.commit()
             Logger.info(f"User Found for user id {userId}")
+            Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
             return json.dumps({'status': "success", "token": token, "username": username, "userId": userId, "profileId": profileId, "message": "User found successfully", "created": False}), 200
         
         else:
@@ -342,6 +353,7 @@ def login_with_user_id():
 @Router.route('/upload-biodata', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def bio_data():
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     root = get_project_root()
     upload_folder = Config.BIO_DATA_PDF_PATH
     Logger.debug(f"Project root: {root}")
@@ -382,6 +394,7 @@ def bio_data():
 
         file.save(os.path.join(upload_folder, requestFileName))
         Logger.info(f"File uploaded successfully: {requestFileName}")
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         return json.dumps({"status": "success", "message": "File uploaded successfully", "filename": requestFileName}), 200
 
     except Exception as e:
@@ -399,6 +412,7 @@ def bio_data():
 @Router.route('/photo-gallery', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def photo_gallery():
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     Upload_Folder = Config.PHOTO_GALLERY_PATH
     if not os.path.exists(Upload_Folder):
         os.makedirs(Upload_Folder)
@@ -420,6 +434,7 @@ def photo_gallery():
                 file_path = os.path.join(Upload_Folder, filename)
                 file.save(file_path)
                 Logger.info(f"File uploaded successfully: {filename}")
+                Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
                 return json.dumps({"status": "failed", "message": "File uploaded successfully"}), 200
     except Exception as e:
         Logger.error(f"Error uploading file: {e}")
@@ -429,7 +444,7 @@ def photo_gallery():
 @Router.route('/user-details', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def get_user_details():
-
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = createDbConnection()
     Logger.debug("Database connection")
     upload_folder = Config.PROFILE_PIC_PATH
@@ -462,24 +477,37 @@ def get_user_details():
         cursorDb.execute(user_query.GetProfileDetails(userId))
         userDetails = cursorDb.fetchall()
         
+        if len(userDetails) == 0:
+            Logger.warning(f"Profile details not found for User Id: {userId}")
+            return json.dumps({"status": "failed", "message": "Profile not found"}), 404
+        
         profileId = userDetails[0]["Id"]
         requestFileName = userDetails[0]["ProfilePicture"]
-        Logger.debug(f"Fetched profile picture filename: {requestFileName}")
-        profile_path = os.path.join(upload_folder, requestFileName)
-        
+        profile_path = ""
         imageData = {'image': []}
-        try:
-            with open(profile_path, 'rb') as file:
-                # Read the file content and convert it into a byte array
-                file_content = file.read()
-                byte_array = bytearray(file_content)
-                byte_array_list = list(byte_array)
-                imageData["image"] = byte_array_list
-        except FileNotFoundError:
-            Logger.error("Image not found error")
+        
+        if is_null_or_empty(requestFileName):
+            Logger.warning("Profile picture not found in db")
+        else:
+            
+            Logger.debug(f"Fetched profile picture filename: {requestFileName}")
+            profile_path = os.path.join(upload_folder, requestFileName)
+            
+            
+            try:
+                with open(profile_path, 'rb') as file:
+                    # Read the file content and convert it into a byte array
+                    file_content = file.read()
+                    byte_array = bytearray(file_content)
+                    byte_array_list = list(byte_array)
+                    imageData["image"] = byte_array_list
+            except FileNotFoundError:
+                Logger.error("Image not found error")
         
         cursorDb.execute(user_query.GetMatrimonialData(profileId))
         matrimonial_details = cursorDb.fetchone()
+        Logger.info(f"Matrimonial Details Fetched {matrimonial_details}")
+        
         subscribe_Token = matrimonial_details['Subscribe_Token']
         name = matrimonial_details['Name']
         sub_caste = matrimonial_details['SubCaste']
@@ -503,7 +531,7 @@ def get_user_details():
             phoneNumber: str = str(userDetails[0]["PhoneNumber"])
             Logger.warning(f"Phone Number: {phoneNumber}")
         except Exception as e:
-            Logger.error("Value Error Phone Number not Available in user details")
+            Logger.warning("Value Error Phone Number not Available in user details")
             Logger.warning(f"Phone Number IN Matrimonial: {matrimonial_details['PhoneNumber']}")
             
             phoneNumber: str = str(matrimonial_details['PhoneNumber'])
@@ -512,6 +540,7 @@ def get_user_details():
         db.commit()
         Logger.info(f"User details retrieved successfully for UserID: {userId}")
         Logger.debug(f"username: {username} | matri_name: {name} | phoneNumber: {phoneNumber} | email: {email} | sub_caste: {sub_caste} | weight: {weight} | height: {height} | address: {address} | about_me: {about_me} | subscribe_token: {subscribe_Token}")
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         return json.dumps({"status": "success", "username": username, "matri_name": name, "age": age, "phoneNumber" : phoneNumber, "email": email,"gender": gender, "dob": dob , "marital_status": marital_status,"sub_caste": sub_caste, "weight": weight, "height": height,"education": education ,"address": address, "about_me": about_me, "subscribe_token": subscribe_Token, "profile_picture": imageData['image']}), 200
         
     except mysql.connector.Error as e: 
@@ -538,7 +567,7 @@ def get_user_details():
 @Router.route('/edit-user-details', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def update_matrimonial_profile():
-    Logger.info("Creating database connection.")
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = createDbConnection()
     data = request.get_json()
     Logger.info("Received data")
@@ -575,6 +604,7 @@ def update_matrimonial_profile():
             return json.dumps({"status": "success", "message": "User Details Data Updated Successfully"})
         Logger.info("User Details Profile Not Exsist Successfully")
         db.commit()
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         return json.dumps({"status":"failed", "message": "This profile id does not exists in matrimonial"}), 400
         
     except mysql.connector.Error as e: 

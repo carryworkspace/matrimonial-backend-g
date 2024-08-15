@@ -31,6 +31,7 @@ import traceback
 @Router.route('/profile', methods=['PATCH'])
 @cross_origin(supports_credentials=True)
 def add_profile():
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = createDbConnection()
     Logger.debug("Database connection established.")
     data = request.get_json()
@@ -49,12 +50,13 @@ def add_profile():
         cursorDb.execute(querys.CheckProfileExists(userId=model.userId))
         profiles = cursorDb.fetchall()
         if len(profiles) == 0:
-            Logger.info("User Id Invalid. This user id does not exist ")
+            Logger.info(f"User Id Invalid. This user id does not exist {model.userId}")
             return json.dumps({"status": "failed", "message": "User Id Invalid. This user id not exist"})
         
         cursorDb.execute(querys.UpdateProfile(), model.__dict__)
         db.commit()
         Logger.info(f"Profile updated successfully for user id: {model.userId}")
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         return json.dumps({"status": "success", "message": "Profile Updated Successfully"}), 200
         
     except mysql.connector.Error as e:
@@ -80,7 +82,7 @@ def add_profile():
 @Router.route('/upload-profile-picture', methods=['PATCH'])
 @cross_origin(supports_credentials=True)
 def upload_profile_picture():
-
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = createDbConnection()
     Logger.debug("Database connection established.")
     upload_folder = Config.PROFILE_PIC_PATH
@@ -148,6 +150,7 @@ def upload_profile_picture():
             cursorDb.execute(querys.UpdateProfilePicture(userId=userId, picture=requestFileName), {"profilePicture": requestFileName, "userId": userId})
             db.commit()
             Logger.info(f"Profile picture updated successfully for userId: {userId}")
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         return json.dumps({"status": "success", "message": "Profile picture uploaded successfully"}), 200
         
     except mysql.connector.Error as e: 
@@ -171,7 +174,7 @@ def upload_profile_picture():
 @Router.route('/profile-picture', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def get_profile_picture():
-
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = createDbConnection()
     Logger.debug("Database connection established.")
     upload_folder = Config.PROFILE_PIC_PATH
@@ -214,6 +217,7 @@ def get_profile_picture():
         
         # return send_file(profile_path, mimetype='image/png, image/jpeg')
         Logger.info(f"Profile picture retrieved successfully for userId: {userId}")
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         return json.dumps(responseData), 200
         
     except mysql.connector.Error as e:
@@ -238,8 +242,8 @@ def get_profile_picture():
 @Router.route('/profile-interest', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def add_profile_interest():
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = createDbConnection()
-    Logger.debug("Database connection established.")
     data = request.get_json()
     Logger.debug(f"Received JSON data: {data}")
     try:
@@ -254,6 +258,7 @@ def add_profile_interest():
         Logger.debug(f"ProfileInterestModel created: {len(model.__dict__.keys())}")
         cursorDb.execute(querys.AddProfileInterest(), model.__dict__)
         db.commit()
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         return "Profile Interest Created Successfully", 200
         
     except mysql.connector.Error as e: 
@@ -276,7 +281,7 @@ def add_profile_interest():
 @Router.route('/matrimonial', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def add_matrimonial_profile():
-    Logger.info("Creating database connection.")
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = createDbConnection()
     data = request.get_json()
     Logger.info("Received data")
@@ -315,6 +320,7 @@ def add_matrimonial_profile():
         cursorDb.execute(querys.AddMatrimonialProfile(), dataDict)
         Logger.info("Matrimonial profile created successfully.")
         db.commit()
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         return json.dumps({"status":"success", "message": "Matrimonial Profile Created Successfully"}), 200
         
     except mysql.connector.Error as e: 
@@ -339,8 +345,8 @@ def add_matrimonial_profile():
 @Router.route('/match', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def add_match_profile():
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = createDbConnection()
-    Logger.debug("Database connection established.")
     data = request.get_json()
     Logger.debug(f"Received JSON data: {data}")
     
@@ -357,6 +363,7 @@ def add_match_profile():
         cursorDb.execute(querys.AddMatchedProfile(), model.__dict__)
         db.commit()
         Logger.info("Profile Interest created successfully.")
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         return "Match Profile Added Successfully", 200
         
     except mysql.connector.Error as e:
@@ -381,8 +388,8 @@ def add_match_profile():
 @Router.route('/gallery-images', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def add_gallery_images():
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = createDbConnection()
-    Logger.debug("Database connection established.")
     data = request.get_json()
     Logger.debug(f"Received JSON data: {data}")
     
@@ -399,6 +406,7 @@ def add_gallery_images():
         cursorDb.execute(querys.AddGalleryImages(), model.__dict__)
         db.commit()
         Logger.info("Gallery Images added successfully.")
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         return "Gallery Images Added Successfully", 200
         
     except mysql.connector.Error as e:
@@ -424,8 +432,8 @@ def add_gallery_images():
 @Router.route('/bio-data-pdf-extract', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def add_bio_data_pdf():
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = createDbConnection()
-    Logger.debug("Database connection established.")
     data = request.get_json()
     upload_folder = Config.BIO_DATA_PDF_PATH
     Logger.info(f"Requesting json : {request.get_json()}")
@@ -479,6 +487,8 @@ def add_bio_data_pdf():
             except json.JSONDecodeError as jd:
                 Logger.error(f"JSON Decode Error: {jd}")
                 exeptionOccurs = True
+                
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         return json.dumps({'status': 'success', 'message': model.__dict__}), 200
         
     except mysql.connector.Error as e: 
