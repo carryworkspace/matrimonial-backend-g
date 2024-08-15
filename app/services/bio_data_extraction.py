@@ -16,11 +16,12 @@ from app.extentions.common_extensions import chatgpt_pdf_to_json, query_payload,
 from app.extentions.chatgpt import Chatgpt
 from config import Config
 from app.extentions.logger import Logger
+import traceback
 
 # If modifying these scopes, delete the file token.json.
 root = get_project_root()
 SCOPES = ["https://www.googleapis.com/auth/drive.metadata.readonly"]
-SERVICE_ACCOUNT_FILE = os.path.join(root, fr'app\services\credentials_bio.json')
+SERVICE_ACCOUNT_FILE = os.path.join(root, fr'app/services/credentials_bio.json')
 
 class GoogleDrive:
 
@@ -76,11 +77,13 @@ class GoogleDrive:
       Logger.error(f"Error moving file '{fileName}' ID: {file_id}) to folder {folder_id}: {e}")
   
   
-  # def profile_exists(self, cursor, name, phoneNumber):
-  #       query = f"SELECT * FROM MatrimonialProfile_M WHERE Name = {name} AND PhoneNumber = {phoneNumber}"
-  #       cursor.execute(query, (name, phoneNumber))
-  #       result = cursor.fetchall()
-  #       return len(result) > 0
+  def profile_exists(self, name:str, phoneNumber:str):
+    db, cursor = createDbConnection()
+    query = f"SELECT * FROM MatrimonialProfile_M WHERE Name = '{name}' AND PhoneNumber = '{phoneNumber}'"
+    cursor.execute(query)
+    result = cursor.fetchall()
+    closeDbConnection(db, cursor)
+    return len(result) > 0
       
       
       
@@ -89,54 +92,52 @@ class GoogleDrive:
     db, cursorDb = createDbConnection()
     Logger.debug("Database connection established.")
     
-    try:
-      dataDict = json.loads(data)
-      Logger.debug("JSON data loaded successfully.")
-      
-      # check for N/A values and replace them with empty string
-      for key in dataDict.keys():
-        Logger.debug(f"JSON data loaded successfully for {key}.")
-        if "N/A" in str(dataDict[key]):
-          dataDict[key] = ""
-          Logger.debug(f"Replaced 'N/A' with empty string in key: {key}")
-          
-          #user already exist
-      # if self.profile_exists(cursorDb, dataDict['Name'], dataDict['PhoneNumber']):
-      #   return "User already exists."
-      phoneNumberStr: str = str(dataDict['phoneNumber'])
-      phoneNumber = get_phone_number(phoneNumberStr)
-      
-  
-      username = get_random_name(phoneNumber)
-      password = generate_random_number(length=8)
-      insert_user_query = querys.AddUser(username, phoneNumber, 'null', 'null', dataDict['email'])
-      Logger.info(f"Inserting new user with query: {insert_user_query}")
-      cursorDb.execute(insert_user_query)
-      new_user_id = cursorDb.lastrowid
-      cursorDb.execute(querys.UpdatePassword(new_user_id, password))
-      cursorDb.execute(querys.AddProfileForUser(new_user_id))
-      new_profile_id = cursorDb.lastrowid
-      dataDict["phoneNumber"] = phoneNumber
-          
-      dataDict["profileId"] = new_profile_id
-      Logger.debug(f"Generated profile ID: {dataDict['profileId']}")
-          
-      model = MatrimonialProfileModel.fill_model(dataDict)
-      pdf_model = BioDataPdfModel.fill_model({"profileId": model.profileId, "pdfName": fileName})
-      Logger.debug("Filled MatrimonialProfileModel and BioDataPdfModel.")
-      matrimonialData = model.__dict__
-      matrimonialData["subscribeToken"] = f"{str(matrimonialData['name']).replace(' ', '_')}_{str(matrimonialData['phoneNumber']).replace(' ', '_')}"
-      cursorDb.execute(querys.AddMatrimonialProfile(), matrimonialData)
-      Logger.debug("Executed query to insert MatrimonialProfileModel.")
-      cursorDb.execute(querys.AddBioDataPdfFile(), pdf_model.__dict__)
-      Logger.debug("Executed query to insert BioDataPdfModel.")
-      
-      #cursorDb.execute(querys.Subscribe_Token_Generate(), pdf_model.__dict__)
-      
-      db.commit()
-      Logger.info("Data inserted successfully.")
-    except Exception as e:
-      Logger.error(f"An error occurred: {e}")
+    dataDict = json.loads(data)
+    Logger.debug("JSON data loaded successfully.")
+    
+    # check for N/A values and replace them with empty string
+    for key in dataDict.keys():
+      Logger.debug(f"JSON data loaded successfully for {key}.")
+      if "N/A" in str(dataDict[key]):
+        dataDict[key] = ""
+        Logger.debug(f"Replaced 'N/A' with empty string in key: {key}")
+    #user already exist
+    if self.profile_exists(dataDict['name'], dataDict['phoneNumber']):
+      Logger.warning("User already exists skipping this pdf.")
+      return "User already exists."
+    
+    phoneNumberStr: str = str(dataDict['phoneNumber'])
+    phoneNumber = get_phone_number(phoneNumberStr)
+    
+
+    username = get_random_name(phoneNumber)
+    password = generate_random_number(length=8)
+    insert_user_query = querys.AddUser(username, phoneNumber, 'null', 'null', dataDict['email'])
+    Logger.info(f"Inserting new user with query: {insert_user_query}")
+    cursorDb.execute(insert_user_query)
+    new_user_id = cursorDb.lastrowid
+    cursorDb.execute(querys.UpdatePassword(new_user_id, password))
+    cursorDb.execute(querys.AddProfileForUser(new_user_id))
+    new_profile_id = cursorDb.lastrowid
+    dataDict["phoneNumber"] = phoneNumber
+        
+    dataDict["profileId"] = new_profile_id
+    Logger.debug(f"Generated profile ID: {dataDict['profileId']}")
+        
+    model = MatrimonialProfileModel.fill_model(dataDict)
+    pdf_model = BioDataPdfModel.fill_model({"profileId": model.profileId, "pdfName": fileName})
+    Logger.debug("Filled MatrimonialProfileModel and BioDataPdfModel.")
+    matrimonialData = model.__dict__
+    matrimonialData["subscribeToken"] = f"{str(matrimonialData['name']).replace(' ', '_')}_{str(matrimonialData['phoneNumber']).replace(' ', '_')}"
+    cursorDb.execute(querys.AddMatrimonialProfile(), matrimonialData)
+    Logger.debug("Executed query to insert MatrimonialProfileModel.")
+    cursorDb.execute(querys.AddBioDataPdfFile(), pdf_model.__dict__)
+    Logger.debug("Executed query to insert BioDataPdfModel.")
+    
+    #cursorDb.execute(querys.Subscribe_Token_Generate(), pdf_model.__dict__)
+    
+    db.commit()
+    Logger.info("Data inserted successfully.")
   
   def extract_and_add_to_DB_MAIN(self):
     Logger.debug("Starting extract_and_add_to_DB_MAIN method.")
@@ -171,33 +172,45 @@ class GoogleDrive:
           # _chatgpt = Chatgpt()
           pdf_file_path = os.path.join(save_path, file_name)
           
-          chatgpt_response_json = chatgpt_pdf_to_json(pdf_file_path)
-          Logger.debug(f"Converted PDF to JSON for file: {file_name}")
+          try:
+            chatgpt_response_json = chatgpt_pdf_to_json(pdf_file_path)
+            Logger.debug(f"Converted PDF to JSON for file: {file_name}")
+            
+            if is_null_or_empty(chatgpt_response_json) or chatgpt_response_json.__contains__('sorry') or chatgpt_response_json.__contains__('apologize'):
+              Logger.warning(f"No data extracted from pdf file: {file_name}")
+              self.move_file_to_folder(file_id, Config.ERROR_FOLDER, file_name)
+              Logger.debug(f"Moved file {file_name} to Error_pdfs folder.")
+              continue
+            
+            dataDict = json.loads(chatgpt_response_json)
+            phoneNumber = str(dataDict['phoneNumber'])
+            if is_null_or_empty(phoneNumber):
+              Logger.warning(f"No phone number found in the extracted data for file: {file_name}")
+              self.move_file_to_folder(file_id, Config.ERROR_FOLDER, file_name)
+              Logger.debug(f"Moved file {file_name} to Error_pdfs folder.")
+              continue
           
-          if is_null_or_empty(chatgpt_response_json) or chatgpt_response_json.__contains__('sorry') or chatgpt_response_json.__contains__('apologize'):
-            Logger.warning(f"No data extracted from pdf file: {file_name}")
-            self.move_file_to_folder(file_id, Config.ERROR_FOLDER, file_name)
-            Logger.debug(f"Moved file {file_name} to Error_pdfs folder.")
-            continue
-          
-          dataDict = json.loads(chatgpt_response_json)
-          phoneNumber = str(dataDict['phoneNumber'])
-          if is_null_or_empty(phoneNumber):
-            Logger.warning(f"No phone number found in the extracted data for file: {file_name}")
-            self.move_file_to_folder(file_id, Config.ERROR_FOLDER, file_name)
-            Logger.debug(f"Moved file {file_name} to Error_pdfs folder.")
-            continue
-          
-          self.insert_into_matrimonial(chatgpt_response_json, file_name)
-          Logger.debug(f"Inserted data into matrimonial database for file: {file_name}")
+            self.insert_into_matrimonial(chatgpt_response_json, file_name)
+            Logger.debug(f"Inserted data into matrimonial database for file: {file_name}")
+            self.move_file_to_folder(file_id, destination_folder_id, file_name)
+            Logger.debug(f"Moved file {file_name} to destination folder.")
+            
+          except Exception as e:
+            tb = traceback.extract_tb(e.__traceback__)
+            traceback.print_exc()
+            print(tb)
+            Logger.error(f"An error occurred for Pdf : {file_name}: {tb}")
+            return json.dumps({"status": "failed", "message": str(e)})
           
           # Move the file to the destination folder
-          self.move_file_to_folder(file_id, destination_folder_id, file_name)
-          Logger.debug(f"Moved file {file_name} to destination folder.")
+
       Logger.info("Bio datas extracted and added to database successfully.")
       return json.dumps({"message": "Bio datas extracted and added to database successfully."})
     except Exception as e:
-      Logger.error(f"An error occurred: {e}")
+      tb = traceback.extract_tb(e.__traceback__)
+      traceback.print_exc()
+      print(tb)
+      Logger.error(f"An error occurred: {tb}")
       return json.dumps({"status": "failed", "message": str(e)})
 
   
@@ -205,4 +218,8 @@ class GoogleDrive:
     try: 
       self.extract_and_add_to_DB_MAIN()
     except Exception as e:
+      tb = traceback.extract_tb(e.__traceback__)
+      traceback.print_exc()
+      Logger.error(f"Unexpected Error trackback: {tb}")
+      print(tb)
       Logger.error(f"An error occurred while starting the service. {e}")

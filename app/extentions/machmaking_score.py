@@ -10,6 +10,7 @@ from config import Config
 from app.extentions.multiprocess import MultiProcess
 import traceback
 import time
+from app.querys.user import user_query as querys
 
 class MatchmakingScore:
     def __init__(self):
@@ -404,7 +405,7 @@ class MatchmakingScore:
             matchedMaking = self.check_matchmaking_done_already(profile_id)
             if len(matchedMaking) != 0:
                 Logger.warning(f"Match making already competed for this profile id: {profile_id} updating status in queued.")
-                cursorDb.execute(querys.UpdateMatchQueuedFlag(matched_flag=1, profileId=profile_id, processing_flag=1))
+                cursorDb.execute(querys.UpdateMatchQueuedFlag(matched_flag=1, profileId=profile_id, processing_flag=0))
                 db.commit()  
             return pd.DataFrame()
         
@@ -420,6 +421,10 @@ class MatchmakingScore:
             other_preferences = self.get_other_matrimonial_data_for_ids(user_gender, other_profile_id_list)
         
         print("TOtal itesm:", len(other_preferences))
+        if len(other_preferences) == 0:
+            Logger.warning(f"NO Other User Found for Matchmaking With Opposite Gender: {user_gender}")
+            cursorDb.execute(querys.UpdateMatchQueuedFlag(matched_flag=0, profileId=profile_id, processing_flag=0))
+            return pd.DataFrame()
         # return
         res = MultiProcess()
         

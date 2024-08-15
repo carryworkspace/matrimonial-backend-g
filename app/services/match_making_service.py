@@ -5,6 +5,7 @@ import json
 from app.models.match_profile_model import MatchProfileModel
 from app.querys.user import user_query as querys
 import mysql.connector
+import traceback
 import time
 
 class MatchMakingService:
@@ -34,8 +35,8 @@ class MatchMakingService:
                 
                 # # Process the results
                 if len(sorted_scores_df) == 0:
-                    Logger.info("Matchmaking has been already completed for this Profile")
-                    return json.dumps({"status": "success", "message": "Match making has been already completed for this Profile",}), 200
+                    Logger.info("Matchmaking has been already completed for this Profile  or does not have opposite gender data.")
+                    return json.dumps({"status": "success", "message": "Match making has been already completed for this Profile or does not have opposite gender data.",}), 200
                 
                 db, cursorDb = createDbConnection() 
                 Logger.debug("Database connection created for inserting match data")
@@ -70,12 +71,17 @@ class MatchMakingService:
         
         except Exception as e:
             Logger.error(f"Unexpected Error: {e}")
+            tb = traceback.extract_tb(e.__traceback__)
+            traceback.print_exc()
+            Logger.error(f"Unexpected Error trackback: {tb}")
+            print(tb)
             db.rollback()
             return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
         
         finally:
             closeDbConnection(db, cursorDb)
             Logger.info("Closing database connection")
+            Logger.info(f"*************** Finished Matchmaking ****************")
             
     def start_service(self):
         while True:

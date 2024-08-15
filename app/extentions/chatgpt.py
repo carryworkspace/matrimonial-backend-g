@@ -7,6 +7,7 @@ from app.extentions.pdf_extractor import PdfExtracter
 from app.extentions.logger import Logger 
 from app.utils import contains_any
 import json
+import re
 
 
 class Chatgpt:
@@ -41,14 +42,27 @@ class Chatgpt:
         Logger.info("Received response from OpenAI")
         Logger.debug(f"Response From GPT: {chatgpt_response}")
         
+
+            
         try:
             json.loads(chatgpt_response)
             exeption = False
         except:
-            exeption = True
+            chatgpt_response_filtered = re.search(r'\{.*\}', chatgpt_response, re.DOTALL)
+        
+            if chatgpt_response_filtered:
+                chatgpt_response = chatgpt_response_filtered.group(0)
+                try:
+                    json.loads(chatgpt_response)
+                    exeption = False
+                except:
+                    exeption = True
+            else: 
+                exeption = True
         
         errorList = ["sorry, ", "i'm sorry, ", "i am sorry, ", "apologize"]
         while (contains_any(chatgpt_response.lower(), errorList) or exeption) and self.tries < 3:
+            chatgpt_response = self.chat(text, payload)
             self.tries += 1
             time.sleep(2)
         return chatgpt_response
