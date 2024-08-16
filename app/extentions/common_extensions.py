@@ -165,10 +165,16 @@ def get_random_name(phone):
 
 def get_phone_number(phone:str):
     try:
+        if is_null_or_empty(phone):
+            return 0
+
+        
+        phone = phone.replace("-", "")
+        if phone.__contains__("+91"):
+                phone = phone.replace("+91", "")
         
         if len(phone) > 15:
-            if phone.__contains__("+91"):
-                phone = phone.replace("+91", "")
+            
             parts = re.split(r"[,/]", phone)
             return int(parts[0])
         else:
@@ -408,6 +414,7 @@ def calculate_age(birth_date):
     return age
 
 def cm_to_feet(feet):
+    feet = int(feet)
     return float(feet / 30.48)
 
 def detect_environment():

@@ -13,11 +13,10 @@ import re
 class Chatgpt:
     def __init__(self):
         self.client = OpenAI(api_key=Config.CHAT_GPT_API_KEY)
+        self.tries = 0
     
-    tries = 0
     def chat(self,text, payload):
-        if self.tries == 3:
-            self.tries = 0
+        self.tries = 0
         
         msg = f"please read this text {text} and fill the provided json payload : {payload} and correct the formatting of dob - yyyy-MM-dd and height in cm from fts and time in 24 hours format and fill subcaste withh help of name and please fill gender using name only and please fill the state city country and address and mobile or phone number mandatory and fill all fields of the payload json and if subCaste not provided leave empty and  and return json content only"
         Logger.info("Chatgpt Requesting your message..... waiting for response")
@@ -43,28 +42,63 @@ class Chatgpt:
         Logger.debug(f"Response From GPT: {chatgpt_response}")
         
 
+        exeption = self.IsResponseHaveError(chatgpt_response)  
+        errorList = ["sorry, ", "i'm sorry, ", "i am sorry, ", "apologize"]
+        # while (contains_any(chatgpt_response.lower(), errorList) or exeption) and self.tries < 3:
+        while exeption and self.tries < 3:
+            self.tries += 1
+            chatgpt_response = self.chatAgain(text, payload)
             
+            exeption = self.IsResponseHaveError(chatgpt_response)
+            time.sleep(1)
+            Logger.info("Retrying response from OpenAI")
+            
+        return chatgpt_response
+    
+    def IsResponseHaveError(self, response: str):
+        exeption = False
         try:
-            json.loads(chatgpt_response)
-            exeption = False
+                json.loads(response)
+                exeption = False
         except:
-            chatgpt_response_filtered = re.search(r'\{.*\}', chatgpt_response, re.DOTALL)
+            chatgpt_response_filtered = re.search(r'\{.*\}', response, re.DOTALL)
         
             if chatgpt_response_filtered:
-                chatgpt_response = chatgpt_response_filtered.group(0)
+                response = chatgpt_response_filtered.group(0)
                 try:
-                    json.loads(chatgpt_response)
+                    json.loads(response)
                     exeption = False
                 except:
                     exeption = True
             else: 
                 exeption = True
+        return exeption
+    
+    def chatAgain(self,text, payload):
         
-        errorList = ["sorry, ", "i'm sorry, ", "i am sorry, ", "apologize"]
-        while (contains_any(chatgpt_response.lower(), errorList) or exeption) and self.tries < 3:
-            chatgpt_response = self.chat(text, payload)
-            self.tries += 1
-            time.sleep(2)
+        msg = f"please read this text {text} and fill the provided json payload : {payload} and correct the formatting of dob - yyyy-MM-dd and height in cm from fts and time in 24 hours format and fill subcaste withh help of name and please fill gender using name only and please fill the state city country and address and mobile or phone number mandatory and fill all fields of the payload json and if subCaste not provided leave empty and  and return json content only"
+        Logger.info("Chatgpt Requesting your message..... waiting for response")
+        response = self.client.chat.completions.create(
+        model="gpt-3.5-turbo-16k",
+        messages=[{
+        "role": "user",
+        "content": [
+                {
+                "type": "text",
+                "text": msg
+                }
+            ]
+        }],
+        temperature=1,
+        max_tokens=10000,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0
+        )
+        chatgpt_response = response.choices[0].message.content
+        Logger.info("Received response from OpenAI")
+        Logger.debug(f"Response From GPT: {chatgpt_response}")
+        
         return chatgpt_response
     
 
@@ -170,7 +204,7 @@ class Chatgpt:
 
         if category_text1 == category_text2 == categorized_category:
             Logger.info("Category Matched")
-            return 1
+            return Config.MM_SCORE_10
         else:
             Logger.info("Category not Matched")
             return 0

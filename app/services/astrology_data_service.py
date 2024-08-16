@@ -60,9 +60,9 @@ class AstroService:
         
         
         # Config.END_TIME = time.time()
-        if Config.REQUEST >= 5:
+        if Config.REQUEST >= 60:
             # total_time_taken = Config.END_TIME - Config.START_TIME
-            sleep_time = 100
+            sleep_time = 60
         #     print("Total Time Taken: ", total_time_taken)
         #     sleep_time =  60 - math.floor(total_time_taken)
             print(f"Sleeping for {sleep_time} /seconds.")

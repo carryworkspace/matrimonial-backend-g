@@ -3,7 +3,7 @@ from flask import request, jsonify
 from app.extentions.common_extensions import *
 from app.extentions.otp_extentions import *
 from app.extentions.machmaking_score import MatchmakingScore
-from app.routes import createDbConnection, Router, closeDbConnection
+from app.routes import createDbConnection, Router, closeDbConnection, closePoolConnection
 from flask_cors import cross_origin
 import mysql.connector
 from app.models.match_profile_model import MatchProfileModel
@@ -108,6 +108,7 @@ def perform_matchmaking():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
+        closePoolConnection(db)
         Logger.info("Closing database connection")
 
 @Router.route('/match-making-status', methods=['GET'])
@@ -173,6 +174,7 @@ def match_making_status():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
+        closePoolConnection(db)
         Logger.info("Closing database connection")
 
 
@@ -227,7 +229,12 @@ def match_making_result():
                 city = profile["City"]
                 subscribeToken = profile["Subscribe_Token"]
                 state = profile["State"]
-                height = profile["HeightCM"]
+                height = profile["HeightCM"].split(".")
+                height = height[0].split(",")
+                height = height[0]
+                
+                if height == None or height == "" or height == "0" or height == "0.0":
+                    height = 165
                 
                 if int(height) < 50:
                     height = 165
@@ -260,6 +267,9 @@ def match_making_result():
                     
                 else:
                     requestFileName = profile_picture_data["ProfilePicture"]
+                    if requestFileName == None or requestFileName == "":
+                        requestFileName = Config.DEFAULT_PROFILE_PIC
+                        
                     Logger.debug(f"Fetched profile picture filename: {requestFileName}")
                     profile_path = os.path.join(upload_folder, requestFileName)
                     
@@ -275,8 +285,8 @@ def match_making_result():
                             file_content = file.read()
                             byte_array = bytearray(file_content)
                             byte_array_list = list(byte_array)
-                            match_making_result["picture"] = byte_array_list
                             match_making_result["filename"] = requestFileName
+                            match_making_result["picture"] = byte_array_list
                             
                     except FileNotFoundError:
                         Logger.error("Image not found error")
@@ -315,8 +325,65 @@ def match_making_result():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
+        closePoolConnection(db)
         Logger.info("Closing database connection")
         
+
+@Router.route('/matched_profile_viewed', methods=['GET'])
+@cross_origin(supports_credentials=True)
+def update_match_making_profile_viewed():
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
+    # doing someting else will continue after some time
+    db, cursorDb = createDbConnection()
+    try:
+        Logger.info("Starting match_making_status function")
+        id :int = 0
+        try:
+            id = int(request.args["id"])
+        except Exception as e:
+            Logger.error(f"Error occurred while parsing profileId: {e}")
+            id = 0
+        
+        if id == 0:
+            Logger.warning("Profile ID not provided or invalid")
+            return jsonify({"status": "failed", "message": "id not provided"}), 400
+        
+        cursorDb.execute(querys.GetMatchedProfileById(id))
+        matched_data = cursorDb.fetchall()
+        
+        if len(matched_data) == 0:
+            Logger.info(f"Did not get any results for the id: {id} in database.")
+            return json.dumps({'status': 'failed', 'message': 'provided id not exists in datababse'}), 200
+                    
+        else:
+            Logger.info(f"Got results for the id: {id} in database.")
+            Logger.info(f"Got results for the id: {matched_data} in database.")
+            Logger.warning(f"Updating Viewed Status for id: {id}")
+            cursorDb.execute(querys.UpdateViewedStatusMatchedProfile(id))
+            db.commit()
+            return json.dumps({'status': 'success', 'message': 'updated status of viewed'}), 200
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
+    except mysql.connector.Error as e:
+        Logger.error(f"MySQL Database Error: {e}")
+        return json.dumps({"status": "failed", 'message': "some error occurs, in query execution"}), 400
+    except json.JSONDecodeError as jd:
+        Logger.error(f"JSON Decode Error: {jd}")
+        db.rollback()
+        return json.dumps({"status": "failed", 'message': "Invalid data format of json"}), 400
+    
+    except ValueError as ve:
+        Logger.error(f"Value Error: {ve}")
+        db.rollback()
+        return json.dumps({"status": "failed", 'message': "Invalid data format"}), 400
+
+    except Exception as e:
+        Logger.error(f"Unexpected Error: {e}")
+        db.rollback()
+        return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
+    finally:
+        closeDbConnection(db, cursorDb)
+        closePoolConnection(db)
+        Logger.info("Closing database connection")
 
 @Router.route('/download-bio-data', methods=['GET'])
 @cross_origin(supports_credentials=True)
@@ -395,8 +462,8 @@ def download_pdf():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
+        closePoolConnection(db)
         Logger.info("Closing database connection")
-
 
 
 # @Router.route('/astro', methods=['GET'])

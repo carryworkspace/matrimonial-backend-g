@@ -17,7 +17,7 @@ from ...extentions.pdf_extractor import PdfExtracter
 from ...extentions.common_extensions import users_otp
 from ...models.bio_data_pdf_model import BioDataPdfModel
 from ...models.match_profile_model import MatchProfileModel
-from .. import createDbConnection, Router,closeDbConnection
+from .. import createDbConnection, Router,closeDbConnection, closePoolConnection
 from ...models.gallery_images_model import GalleryImagesModel
 from ...models.profile_interest_model import ProfileInterestModel
 from flask import jsonify, request, abort, send_file, make_response
@@ -76,6 +76,7 @@ def add_profile():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
+        closePoolConnection(db)
         Logger.debug("Database connection closed.")
 
 # upload profile
@@ -168,6 +169,7 @@ def upload_profile_picture():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
+        closePoolConnection(db)
         Logger.debug("Database connection closed.")
 
 # profile picture fetch
@@ -237,6 +239,7 @@ def get_profile_picture():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
+        closePoolConnection(db)
         Logger.debug("Database connection closed.")
 
 @Router.route('/profile-interest', methods=['POST'])
@@ -340,6 +343,7 @@ def add_matrimonial_profile():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         Logger.info("Closing database connection.")
+        closePoolConnection(db)
         closeDbConnection(db, cursorDb)
 
 @Router.route('/match', methods=['POST'])
@@ -383,6 +387,7 @@ def add_match_profile():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
+        closePoolConnection(db)
         Logger.debug("Database connection closed.")
 
 @Router.route('/gallery-images', methods=['POST'])
@@ -426,6 +431,7 @@ def add_gallery_images():
         return json.dumps({"status": "failed","message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
+        closePoolConnection(db)
         Logger.debug("Database connection closed.")
 
 # extract bio data
@@ -516,5 +522,6 @@ def add_bio_data_pdf():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
+        closePoolConnection(db)
         Logger.debug("Database connection closed")
         Logger.info("add_bio_data_pdf function execution completed")

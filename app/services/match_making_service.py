@@ -45,6 +45,9 @@ class MatchMakingService:
                     Logger.debug(f"Model data filled for match: {len(model.__dict__.keys())} with score of : {model.matchScore} and MainProfile: {model.mainProfileId} and Other Profile: {model.profileId}")
                     model.mainProfileId = profileId
                     
+                    if model.matchScore == 0:
+                        Logger.warning(f"Match score is 0, skipping this match for ProfileId: {model.matchScore}")
+                        continue
                     cursorDb.execute(querys.AddMatchedProfile(), model.__dict__)
                     db.commit()
                     Logger.debug("Executed query to add matched profile")

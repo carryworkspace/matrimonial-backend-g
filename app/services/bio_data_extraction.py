@@ -117,7 +117,9 @@ class GoogleDrive:
     cursorDb.execute(insert_user_query)
     new_user_id = cursorDb.lastrowid
     cursorDb.execute(querys.UpdatePassword(new_user_id, password))
+    Logger.debug(f"Update Password")
     cursorDb.execute(querys.AddProfileForUser(new_user_id))
+    Logger.debug(f"Add Profile For User")
     new_profile_id = cursorDb.lastrowid
     dataDict["phoneNumber"] = phoneNumber
         
@@ -138,6 +140,7 @@ class GoogleDrive:
     
     db.commit()
     Logger.info("Data inserted successfully.")
+    closeDbConnection(db, cursorDb)
   
   def extract_and_add_to_DB_MAIN(self):
     Logger.debug("Starting extract_and_add_to_DB_MAIN method.")
@@ -200,12 +203,14 @@ class GoogleDrive:
             traceback.print_exc()
             print(tb)
             Logger.error(f"An error occurred for Pdf : {file_name}: {tb}")
-            return json.dumps({"status": "failed", "message": str(e)})
+            self.move_file_to_folder(file_id, Config.ERROR_FOLDER, file_name)
+            Logger.debug(f"Moved file {file_name} to error folder.")
+            # return json.dumps({"status": "failed", "message": str(e)})
           
           # Move the file to the destination folder
 
       Logger.info("Bio datas extracted and added to database successfully.")
-      return json.dumps({"message": "Bio datas extracted and added to database successfully."})
+      # return json.dumps({"message": "Bio datas extracted and added to database successfully."})
     except Exception as e:
       tb = traceback.extract_tb(e.__traceback__)
       traceback.print_exc()

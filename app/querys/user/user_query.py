@@ -82,11 +82,15 @@ def GetAllMatrimonialData():
 
 def GetMatchedProfiles(mainProfileId: int):
     Logger.debug(f"Generating SQL query to get matrimonial data ")
-    return f"select * from MatchedProfiles_M where MainProfileId= {mainProfileId} and IsExpired = 0 order by MatchScore desc"
+    return f"select * from MatchedProfiles_M where MainProfileId= {mainProfileId} and IsExpired = 0 and Viewed = 0 order by MatchScore desc Limit 10"
 
 def GetBioDataPdfByProfileId(profileId: int):
     Logger.debug(f"Generating SQL query to get bio data pdf for profile Id {profileId}")
     return f"select * from BioDataPdfFiles_M where ProfileId = {profileId} and IsActive = 1"
+
+def GetMatchedProfileById(id: int):
+    Logger.debug(f"Generating SQL query to get matched profile by id {id}")
+    return f"select * from MatchedProfiles_M where Id = {id} and Viewed = 0 and IsExpired = 0"
 
 # Insert
 
@@ -233,6 +237,10 @@ def UpdateProfilePicture():
 def UpdateBioDataPdfFile():
     Logger.debug("Generated SQL query for updating bio data PDF file")
     return f"update BioDataPdfFiles_M set PdfName = %(pdfName)s where ProfileId = %(profileId)s "
+
+def UpdateViewedStatusMatchedProfile(id: int):
+    Logger.debug("Generated SQL query for updating match making viewed")
+    return f"update MatchedProfiles_M set Viewed = 1 where Id = {id}"
 
 def AddUser(username: str, phone: int, googleAuth: str, truecallerAuth: str, email:str):
     Logger.debug("Generated SQL query for adding user")
