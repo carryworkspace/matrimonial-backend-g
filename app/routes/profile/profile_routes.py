@@ -196,6 +196,8 @@ def get_profile_picture():
         
         cursorDb.execute(querys.GetProfilePicture(userId))
         requestFileName = cursorDb.fetchall()[0]["ProfilePicture"]
+        if is_null_or_empty(requestFileName):
+            requestFileName = Config.DEFAULT_PROFILE_PIC
         Logger.debug(f"Fetched profile picture filename: {requestFileName}")
         profile_path = os.path.join(upload_folder, requestFileName)
         if not os.path.exists(profile_path):
