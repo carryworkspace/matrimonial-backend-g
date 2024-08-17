@@ -16,10 +16,11 @@ LOG_FILE_PATH = Config.LOG_FILE_PATH
 class Logger:
     
     @staticmethod
-    def setup_logger(): 
+    def setup_logger(filePath = LOG_FILE_PATH): 
         # Ensure the log folder exists
-        log_dir = os.path.dirname(LOG_FILE_PATH)
+        log_dir = os.path.dirname(filePath)
         print(f"Log directory: {log_dir}")
+        print(f"Log file path: {filePath}")
         
         if not os.path.exists(log_dir):
             print("Directory does not exist, creating...")
@@ -32,8 +33,8 @@ class Logger:
 
         # Add a new handler for file logging
         logger.add(sys.stdout, format=log_format)
-        logger.add(LOG_FILE_PATH, format="{time} | {level} | {message}", rotation="1 MB", retention="10 days")
-        print(f"Logging to: {LOG_FILE_PATH}")
+        logger.add(filePath, format="{time} | {level} | {message}", rotation="1 MB", retention="10 days")
+        print(f"Logging to: {filePath}")
 
 
     @staticmethod
@@ -55,6 +56,3 @@ class Logger:
     @staticmethod    
     def warning(text):
         logger.warning(text)
-
-# Set up the logger when the script is loaded
-Logger.setup_logger()

@@ -170,6 +170,10 @@ def get_phone_number(phone:str):
 
         
         phone = phone.replace("-", "")
+        phone = phone.replace("#", "")
+        phone = phone.replace("*", "")
+        phone = phone.replace(" ", "")
+        phone = phone.replace("_", "")
         if phone.__contains__("+91"):
                 phone = phone.replace("+91", "")
         
@@ -297,6 +301,53 @@ def chatgpt_pdf_to_json(pdfFilePath) -> str:
     response = chatgpt.chat(pdfText, payload)
     Logger.info(f"Data Fetched: {response}")
     return response
+
+def get_phone_number_by_regex_from_pdf(pdfFilePath) -> str:
+    pdfText = PdfExtracter.extract_text_from_pdf_url(pdfFilePath)
+    if len(pdfText) < 100:
+        Logger.error("PDF text is too short to process")
+        return ""
+    Logger.debug(f"Extracted PDF text: {pdfText}")
+    phone_numbers = extract_phone_numbers(pdfText)
+    phone_number = ""
+    try:
+        phone_number = phone_numbers[0]
+    except:
+        phone_number
+    return phone_number
+
+def extract_phone_numbers(text):
+    # Regular expression for phone numbers
+    phone_regex = re.compile(r'(\d{10}|\d{12})')
+    
+    # Find all phone numbers in the text
+    phone_numbers = phone_regex.findall(text)
+    
+    # Join the extracted groups into a proper phone number format
+    extracted_numbers = [''.join(number) for number in phone_numbers]
+    
+    return extracted_numbers
+
+def extract_zip_code(pdfFilePath):
+    pdfText = PdfExtracter.extract_text_from_pdf_url(pdfFilePath)
+    if len(pdfText) < 100:
+        Logger.error("PDF text is too short to process")
+        return ""
+    Logger.debug(f"Extracted PDF text: {pdfText}")
+    
+    # Regular expression for phone numbers
+    phone_regex =  re.compile(r'(?<!\d)\d{6}(?!\d)')
+    
+    # Find all phone numbers in the text
+    zip_codes = phone_regex.findall(pdfText)
+    zip_code = ''
+    
+    # Join the extracted groups into a proper phone number format
+    extracted_zipcodes = [''.join(number) for number in zip_codes]
+    if len(zip_codes) > 0:
+        zip_code = extracted_zipcodes[0]
+    
+    return zip_code
 
 def chatgpt_pdf_to_database_query_json(pdfFilePath) -> str:
     chatgpt = Chatgpt()

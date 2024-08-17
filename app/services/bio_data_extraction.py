@@ -1,7 +1,7 @@
 import os.path
 import io
 import json
-
+import time
 from google.auth.transport.requests import Request
 from google.oauth2.service_account import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -12,7 +12,7 @@ from app.routes import createDbConnection, closeDbConnection
 from app.models.matrimonial_profile_model import MatrimonialProfileModel
 from app.models.bio_data_pdf_model import BioDataPdfModel
 from app.querys.user import user_query as querys
-from app.extentions.common_extensions import chatgpt_pdf_to_json, query_payload, get_project_root, generate_random_number, get_random_name, get_phone_number, is_null_or_empty
+from app.extentions.common_extensions import chatgpt_pdf_to_json, query_payload, get_project_root, generate_random_number, get_random_name, get_phone_number, is_null_or_empty, is_number_zero, get_phone_number_by_regex_from_pdf, extract_zip_code
 from app.extentions.chatgpt import Chatgpt
 from config import Config
 from app.extentions.logger import Logger
@@ -87,13 +87,14 @@ class GoogleDrive:
       
       
       
-  def insert_into_matrimonial(self, data, fileName: str):
+  def insert_into_matrimonial(self, dataDict, fileName: str):
     Logger.debug("Starting insert_into_matrimonial method.")
     db, cursorDb = createDbConnection()
     Logger.debug("Database connection established.")
     
-    dataDict = json.loads(data)
-    Logger.debug("JSON data loaded successfully.")
+    phoneNumberStr: str = str(dataDict['phoneNumber'])
+    phoneNumber = get_phone_number(phoneNumberStr)
+    dataDict["phoneNumber"] = str(phoneNumber)
     
     # check for N/A values and replace them with empty string
     for key in dataDict.keys():
@@ -105,10 +106,6 @@ class GoogleDrive:
     if self.profile_exists(dataDict['name'], dataDict['phoneNumber']):
       Logger.warning("User already exists skipping this pdf.")
       return "User already exists."
-    
-    phoneNumberStr: str = str(dataDict['phoneNumber'])
-    phoneNumber = get_phone_number(phoneNumberStr)
-    
 
     username = get_random_name(phoneNumber)
     password = generate_random_number(length=8)
@@ -121,7 +118,7 @@ class GoogleDrive:
     cursorDb.execute(querys.AddProfileForUser(new_user_id))
     Logger.debug(f"Add Profile For User")
     new_profile_id = cursorDb.lastrowid
-    dataDict["phoneNumber"] = phoneNumber
+    
         
     dataDict["profileId"] = new_profile_id
     Logger.debug(f"Generated profile ID: {dataDict['profileId']}")
@@ -159,15 +156,20 @@ class GoogleDrive:
       # List all PDF files in the source folder
       pdf_files = self.list_files_in_folder(source_folder_id)
       Logger.debug(f"Listed PDF files in source folder. Count: {len(pdf_files)}")
+      total_pdfs = len(pdf_files)
+      pdf_completed_count = 0
       
-      if len(pdf_files) == 0:
+      if total_pdfs == 0:
         Logger.warning("No PDF files found in the source folder.")
         return json.dumps({"message":"No PDF files found in the source folder.", "status": "success"})
         
       for file in pdf_files:
+          pdf_completed_count = pdf_completed_count + 1
+          pending_pdf = total_pdfs - pdf_completed_count
+          
           file_id = file['id']
           file_name = file['name']
-          Logger.debug(f"Processing file: {file_name}")
+          Logger.debug(f"********************Processing file: {file_name}**** Pending: {pending_pdf}**** Completed: {pdf_completed_count} ***********")
           
           # Download the PDF file
           self.download_file(file_id, file_name, save_path)
@@ -182,21 +184,44 @@ class GoogleDrive:
             if is_null_or_empty(chatgpt_response_json) or chatgpt_response_json.__contains__('sorry') or chatgpt_response_json.__contains__('apologize'):
               Logger.warning(f"No data extracted from pdf file: {file_name}")
               self.move_file_to_folder(file_id, Config.ERROR_FOLDER, file_name)
-              Logger.debug(f"Moved file {file_name} to Error_pdfs folder.")
+              Logger.warning(f"Moved file {file_name} to Error_pdfs folder.")
               continue
             
             dataDict = json.loads(chatgpt_response_json)
-            phoneNumber = str(dataDict['phoneNumber'])
-            if is_null_or_empty(phoneNumber):
-              Logger.warning(f"No phone number found in the extracted data for file: {file_name}")
+            Logger.debug(f"JSON data loaded successfully for file: {file_name}")
+            
+            phoneNumberStr: str = str(dataDict['phoneNumber'])
+            
+            if is_null_or_empty(phoneNumberStr):
+              Logger.warning(f"No phone number: {phoneNumberStr} found in the extracted data for file: {file_name}")
+              phoneNumber = get_phone_number_by_regex_from_pdf(pdf_file_path)
+              if is_null_or_empty(phoneNumber) == False:
+                Logger.debug(f"Extracted phone number: {phoneNumber} from pdf file: {file_name}")
+                phoneNumberStr = str(phoneNumber)
+                dataDict['phoneNumber'] = phoneNumberStr
+              else:
+                self.move_file_to_folder(file_id, Config.ERROR_FOLDER, file_name)
+                Logger.warning(f"Moved file {file_name} to Error_pdfs folder.")
+                continue
+            
+            phoneNumber: int = get_phone_number(phoneNumberStr)
+            if is_number_zero(phoneNumber):
+              Logger.warning(f"No phone number: {str(phoneNumber)} found in the extracted data for file: {file_name}")
               self.move_file_to_folder(file_id, Config.ERROR_FOLDER, file_name)
-              Logger.debug(f"Moved file {file_name} to Error_pdfs folder.")
+              Logger.warning(f"Moved file {file_name} to Error_pdfs folder.")
               continue
+            
+            try:
+              if is_null_or_empty(dataDict['zipCode']):
+                dataDict['zipCode'] = extract_zip_code(pdf_file_path)
+            except:
+              pass
           
-            self.insert_into_matrimonial(chatgpt_response_json, file_name)
+            self.insert_into_matrimonial(dataDict, file_name)
             Logger.debug(f"Inserted data into matrimonial database for file: {file_name}")
             self.move_file_to_folder(file_id, destination_folder_id, file_name)
-            Logger.debug(f"Moved file {file_name} to destination folder.")
+            Logger.success(f"Moved file {file_name} to destination folder.")
+            Logger.success(f"********************Completed file: {file_name}***********")
             
           except Exception as e:
             tb = traceback.extract_tb(e.__traceback__)
@@ -220,11 +245,16 @@ class GoogleDrive:
 
   
   def start_service(self):
-    try: 
-      self.extract_and_add_to_DB_MAIN()
-    except Exception as e:
-      tb = traceback.extract_tb(e.__traceback__)
-      traceback.print_exc()
-      Logger.error(f"Unexpected Error trackback: {tb}")
-      print(tb)
-      Logger.error(f"An error occurred while starting the service. {e}")
+    while True:
+      try: 
+        self.extract_and_add_to_DB_MAIN()
+      except Exception as e:
+        tb = traceback.extract_tb(e.__traceback__)
+        traceback.print_exc()
+        Logger.error(f"Unexpected Error trackback: {tb}")
+        print(tb)
+        Logger.error(f"An error occurred while starting the service. {e}")
+        
+      sleepTime = 60 * 10
+      Logger.warning(f"Waiting for {sleepTime} seconds before checking again")
+      time.sleep(sleepTime)  # Wait for 10 minute before checking again

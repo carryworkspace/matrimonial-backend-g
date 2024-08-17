@@ -53,3 +53,7 @@ Thumbs.db
 uploads
 __pycache__
 venv
+.env
+.conf
+credentials_bio.json
+app/services/credentials_bio.json

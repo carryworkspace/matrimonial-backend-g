@@ -10,21 +10,21 @@ Router = Blueprint('Router', __name__)
 # db_pool: connector.connection.MySQLConnection = None
 db_pool = None
 
-# def createDbConnection():
-#     # global db, cursorDb
+def createNormalDbConnection():
+    # global db, cursorDb
 
-#     print("********************",Config.DB_HOST, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME    )
-#     db = connector.connect(
-#         host=Config.DB_HOST,
-#         user=Config.DB_USER,
-#         password=Config.DB_PASSWORD,
-#         database=Config.DB_NAME
-#     )
+    print("********************",Config.DB_HOST, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME    )
+    db = connector.connect(
+        host=Config.DB_HOST,
+        user=Config.DB_USER,
+        password=Config.DB_PASSWORD,
+        database=Config.DB_NAME
+    )
     
-#     cursorDb = db.cursor(dictionary=True)
-#     if db.get_server_info() is not None:
-#         print("Database connected")
-#     return db, cursorDb
+    cursorDb = db.cursor(dictionary=True)
+    if db.get_server_info() is not None:
+        print("Database connected")
+    return db, cursorDb
 
 def createDbConnection():
     global db_pool
@@ -60,7 +60,7 @@ def closeDbConnection(db, cursorDb):
 
 def closePoolConnection(db):
     db.close()
-    print("Database Disconnected")
+    print("Database Disconnected from pool")
 
 
 # from . import hotel  

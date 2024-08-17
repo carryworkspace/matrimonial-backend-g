@@ -42,14 +42,16 @@ class Chatgpt:
         Logger.debug(f"Response From GPT: {chatgpt_response}")
         
 
-        exeption = self.IsResponseHaveError(chatgpt_response)  
+        exeption, chatgpt_response = self.IsResponseHaveError(chatgpt_response) 
+        
+                
         errorList = ["sorry, ", "i'm sorry, ", "i am sorry, ", "apologize"]
         # while (contains_any(chatgpt_response.lower(), errorList) or exeption) and self.tries < 3:
         while exeption and self.tries < 3:
             self.tries += 1
             chatgpt_response = self.chatAgain(text, payload)
             
-            exeption = self.IsResponseHaveError(chatgpt_response)
+            exeption, chatgpt_response = self.IsResponseHaveError(chatgpt_response)
             time.sleep(1)
             Logger.info("Retrying response from OpenAI")
             
@@ -72,7 +74,7 @@ class Chatgpt:
                     exeption = True
             else: 
                 exeption = True
-        return exeption
+        return exeption, response
     
     def chatAgain(self,text, payload):
         
