@@ -2,6 +2,7 @@ from flask import Blueprint, g
 from mysql import connector
 from config import Config
 import mysql.connector.pooling as pooling
+from app.extentions.logger import Logger
 
 # db = None
 # cursorDb = None
@@ -42,11 +43,29 @@ def createDbConnection():
         )
         print("Connection pool created")
 
+    try:
+        db = db_pool.get_connection()
+        cursorDb = db.cursor(dictionary=True)
+    except:
+        Logger.error("Error in connection")
+        Logger.warning("Retrying connection")
+        
+        db_pool = pooling.MySQLConnectionPool(
+            pool_name="mypool",
+            pool_size=10,  # Adjust the pool size as needed
+            pool_reset_session=True,
+            host=Config.DB_HOST,
+            user=Config.DB_USER,
+            password=Config.DB_PASSWORD,
+            database=Config.DB_NAME
+        )
+        db = db_pool.get_connection()
+        cursorDb = db.cursor(dictionary=True)
+        print("Connection pool created")
+        
     # Get a connection from the pool
-    db = db_pool.get_connection()
     
     # Create a cursor
-    cursorDb = db.cursor(dictionary=True)
 
     if db.is_connected():
         print("Database connected from pool")

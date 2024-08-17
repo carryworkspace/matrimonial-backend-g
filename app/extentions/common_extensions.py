@@ -12,6 +12,8 @@ from .chatgpt import Chatgpt
 from app.extentions.logger import Logger 
 import socket
 import re
+from app.extentions.regex_extraction import *
+
 users_otp = {}
 query_payload = payload = {
     "name": "",
@@ -302,31 +304,40 @@ def chatgpt_pdf_to_json(pdfFilePath) -> str:
     Logger.info(f"Data Fetched: {response}")
     return response
 
-def get_phone_number_by_regex_from_pdf(pdfFilePath) -> str:
+def extract_text_from_pdf(pdfFilePath):
     pdfText = PdfExtracter.extract_text_from_pdf_url(pdfFilePath)
     if len(pdfText) < 100:
         Logger.error("PDF text is too short to process")
         return ""
     Logger.debug(f"Extracted PDF text: {pdfText}")
-    phone_numbers = extract_phone_numbers(pdfText)
-    phone_number = ""
-    try:
-        phone_number = phone_numbers[0]
-    except:
-        phone_number
-    return phone_number
+    return pdfText
+    
 
-def extract_phone_numbers(text):
-    # Regular expression for phone numbers
-    phone_regex = re.compile(r'(\d{10}|\d{12})')
+# def get_phone_number_by_regex_from_pdf(pdfFilePath) -> str:
+#     pdfText = PdfExtracter.extract_text_from_pdf_url(pdfFilePath)
+#     if len(pdfText) < 100:
+#         Logger.error("PDF text is too short to process")
+#         return ""
+#     Logger.debug(f"Extracted PDF text: {pdfText}")
+#     phone_numbers = extract_phone_numbers(pdfText)
+#     phone_number = ""
+#     try:
+#         phone_number = phone_numbers[0]
+#     except:
+#         phone_number
+#     return phone_number
+
+# def extract_phone_numbers(text):
+#     # Regular expression for phone numbers
+#     phone_regex = re.compile(r'(\d{10}|\d{12})')
     
-    # Find all phone numbers in the text
-    phone_numbers = phone_regex.findall(text)
+#     # Find all phone numbers in the text
+#     phone_numbers = phone_regex.findall(text)
     
-    # Join the extracted groups into a proper phone number format
-    extracted_numbers = [''.join(number) for number in phone_numbers]
+#     # Join the extracted groups into a proper phone number format
+#     extracted_numbers = [''.join(number) for number in phone_numbers]
     
-    return extracted_numbers
+#     return extracted_numbers
 
 def extract_zip_code(pdfFilePath):
     pdfText = PdfExtracter.extract_text_from_pdf_url(pdfFilePath)

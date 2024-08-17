@@ -12,11 +12,12 @@ from app.routes import createDbConnection, closeDbConnection
 from app.models.matrimonial_profile_model import MatrimonialProfileModel
 from app.models.bio_data_pdf_model import BioDataPdfModel
 from app.querys.user import user_query as querys
-from app.extentions.common_extensions import chatgpt_pdf_to_json, query_payload, get_project_root, generate_random_number, get_random_name, get_phone_number, is_null_or_empty, is_number_zero, get_phone_number_by_regex_from_pdf, extract_zip_code
+from app.extentions.common_extensions import chatgpt_pdf_to_json, query_payload, get_project_root, generate_random_number, get_random_name, get_phone_number, is_null_or_empty, is_number_zero, extract_text_from_pdf
 from app.extentions.chatgpt import Chatgpt
 from config import Config
 from app.extentions.logger import Logger
 import traceback
+from app.extentions.regex_extraction import *
 
 # If modifying these scopes, delete the file token.json.
 root = get_project_root()
@@ -164,12 +165,11 @@ class GoogleDrive:
         return json.dumps({"message":"No PDF files found in the source folder.", "status": "success"})
         
       for file in pdf_files:
-          pdf_completed_count = pdf_completed_count + 1
           pending_pdf = total_pdfs - pdf_completed_count
           
           file_id = file['id']
           file_name = file['name']
-          Logger.debug(f"********************Processing file: {file_name}**** Pending: {pending_pdf}**** Completed: {pdf_completed_count} ***********")
+          Logger.debug(f"********************Processing file: {file_name}**** Pending: {pending_pdf} **** Completed: {pdf_completed_count} ***********")
           
           # Download the PDF file
           self.download_file(file_id, file_name, save_path)
@@ -192,9 +192,16 @@ class GoogleDrive:
             
             phoneNumberStr: str = str(dataDict['phoneNumber'])
             
+            # getting pdf text
+            pdf_text = extract_text_from_pdf(pdf_file_path)
+            
+            if is_null_or_empty(pdf_text):
+              Logger.warning(f"No data extracted from pdf file: {file_name}")
+            
+            # checking for phone number fnd in pdf text
             if is_null_or_empty(phoneNumberStr):
               Logger.warning(f"No phone number: {phoneNumberStr} found in the extracted data for file: {file_name}")
-              phoneNumber = get_phone_number_by_regex_from_pdf(pdf_file_path)
+              phoneNumber = extract_phone_numbers(pdf_text)
               if is_null_or_empty(phoneNumber) == False:
                 Logger.debug(f"Extracted phone number: {phoneNumber} from pdf file: {file_name}")
                 phoneNumberStr = str(phoneNumber)
@@ -213,9 +220,28 @@ class GoogleDrive:
             
             try:
               if is_null_or_empty(dataDict['zipCode']):
-                dataDict['zipCode'] = extract_zip_code(pdf_file_path)
+                dataDict['zipCode'] = extract_zip_code(pdf_text)
             except:
               pass
+            
+            try:
+              if is_null_or_empty(dataDict['dob']):
+                dataDict['dob'] = extract_dob(pdf_text)
+            except:
+              pass
+            
+            try:
+              if is_null_or_empty(dataDict['time']):
+                dataDict['time'] = extract_time(pdf_text)
+            except:
+              pass
+            
+            try:
+              if is_null_or_empty(dataDict['email']):
+                dataDict['email'] = extract_email(pdf_text)
+            except:
+              pass
+            
           
             self.insert_into_matrimonial(dataDict, file_name)
             Logger.debug(f"Inserted data into matrimonial database for file: {file_name}")
@@ -233,6 +259,7 @@ class GoogleDrive:
             # return json.dumps({"status": "failed", "message": str(e)})
           
           # Move the file to the destination folder
+          pdf_completed_count = pdf_completed_count + 1
 
       Logger.info("Bio datas extracted and added to database successfully.")
       # return json.dumps({"message": "Bio datas extracted and added to database successfully."})
