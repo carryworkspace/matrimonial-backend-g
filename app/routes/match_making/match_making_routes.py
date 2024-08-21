@@ -108,7 +108,7 @@ def perform_matchmaking():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
-        closePoolConnection(db)
+        # closePoolConnection(db)
         Logger.info("Closing database connection")
 
 @Router.route('/match-making-status', methods=['GET'])
@@ -174,7 +174,7 @@ def match_making_status():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
-        closePoolConnection(db)
+        # closePoolConnection(db)
         Logger.info("Closing database connection")
 
 
@@ -325,7 +325,7 @@ def match_making_result():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
-        closePoolConnection(db)
+        # closePoolConnection(db)
         Logger.info("Closing database connection")
         
 
@@ -382,7 +382,7 @@ def update_match_making_profile_viewed():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
-        closePoolConnection(db)
+        # closePoolConnection(db)
         Logger.info("Closing database connection")
 
 @Router.route('/download-bio-data', methods=['GET'])
@@ -462,7 +462,7 @@ def download_pdf():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
-        closePoolConnection(db)
+        # closePoolConnection(db)
         Logger.info("Closing database connection")
 
 

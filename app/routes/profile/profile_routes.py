@@ -76,7 +76,7 @@ def add_profile():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
-        closePoolConnection(db)
+        # closePoolConnection(db)
         Logger.debug("Database connection closed.")
 
 # upload profile
@@ -169,7 +169,7 @@ def upload_profile_picture():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
-        closePoolConnection(db)
+        # closePoolConnection(db)
         Logger.debug("Database connection closed.")
 
 # profile picture fetch
@@ -203,7 +203,7 @@ def get_profile_picture():
         if not os.path.exists(profile_path):
             Logger.warning(f"Profile Picture not found for user ID: {userId}")
             return json.dumps({"status": "failed", "message": "Profile Picture not found. Please upload first"}), 400
-        
+        # return send_file(profile_path, mimetype='image/png, image/jpeg')
         db.commit()
         responseData = {}
         try:
@@ -241,7 +241,7 @@ def get_profile_picture():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
-        closePoolConnection(db)
+        # closePoolConnection(db)
         Logger.debug("Database connection closed.")
 
 @Router.route('/profile-interest', methods=['POST'])
@@ -345,7 +345,7 @@ def add_matrimonial_profile():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         Logger.info("Closing database connection.")
-        closePoolConnection(db)
+        # closePoolConnection(db)
         closeDbConnection(db, cursorDb)
 
 @Router.route('/match', methods=['POST'])
@@ -389,7 +389,7 @@ def add_match_profile():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
-        closePoolConnection(db)
+        # closePoolConnection(db)
         Logger.debug("Database connection closed.")
 
 @Router.route('/gallery-images', methods=['POST'])
@@ -433,7 +433,7 @@ def add_gallery_images():
         return json.dumps({"status": "failed","message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
-        closePoolConnection(db)
+        # closePoolConnection(db)
         Logger.debug("Database connection closed.")
 
 # extract bio data
@@ -524,6 +524,6 @@ def add_bio_data_pdf():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
-        closePoolConnection(db)
+        # closePoolConnection(db)
         Logger.debug("Database connection closed")
         Logger.info("add_bio_data_pdf function execution completed")

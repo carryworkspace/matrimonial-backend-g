@@ -131,7 +131,7 @@ def verify_otp():
     
     finally:
         closeDbConnection(db, cursorDb)
-        closePoolConnection(db)
+        # closePoolConnection(db)
         Logger.debug("Database connection closed.")
         Logger.info("verify_otp function execution completed.")
 
@@ -266,7 +266,7 @@ def google_auth():
     
     finally:
         closeDbConnection(db, cursorDb)
-        closePoolConnection(db)
+        # closePoolConnection(db)
         Logger.info("Database connection closed")
         
 
@@ -349,7 +349,7 @@ def login_with_user_id():
     
     finally:
         closeDbConnection(db, cursorDb)
-        closePoolConnection(db)
+        # closePoolConnection(db)
         Logger.info("Database connection closed")
 
 # uplaod bio data
@@ -410,7 +410,7 @@ def bio_data():
             return json.dumps({"status": "failed", 'message': "some error ocuurs. Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
-        closePoolConnection(db)
+        # closePoolConnection(db)
         Logger.info("Database connection closed")
 
 @Router.route('/photo-gallery', methods=['POST'])
@@ -565,7 +565,7 @@ def get_user_details():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         closeDbConnection(db, cursorDb)
-        closePoolConnection(db)
+        # closePoolConnection(db)
         Logger.info("Database connection closed")
 
 #edit user details
@@ -633,7 +633,7 @@ def update_matrimonial_profile():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
         Logger.info("Closing database connection.")
-        closePoolConnection(db)
+        # closePoolConnection(db)
         closeDbConnection(db, cursorDb)
 
 
