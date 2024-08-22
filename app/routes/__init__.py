@@ -87,3 +87,4 @@ def closePoolConnection(db):
 from .user import user_routes
 from .profile import profile_routes
 from .match_making import match_making_routes
+from .data import data_routes

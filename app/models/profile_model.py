@@ -2,13 +2,12 @@
 
 
 class ProfileModel:
-    def __init__(self, userId=None, unmarried=None, divorced=None,
+    def __init__(self, userId=None, maritalStatus=None,
                  preferredLocation=None, education=None, familyType=None, preferredProfession=None,
                  desiredFamilyBackground=None, desiredColorComplexion=None, location=None, hobbies=None,height=None,weight=None):
         self.userId = userId
         # self.bio = bio
-        self.unmarried = unmarried
-        self.divorced = divorced
+        self.maritalStatus = maritalStatus
         self.preferredLocation = preferredLocation
         self.education = education
         self.familyType = familyType
@@ -26,8 +25,7 @@ class ProfileModel:
         return cls(
             userId=data_dict.get('userId'),
             # bio=data_dict.get('bio'),
-            unmarried=data_dict.get('unmarried'),
-            divorced=data_dict.get('divorced'),
+            maritalStatus=data_dict.get('maritalStatus'),
             preferredLocation=data_dict.get('preferredLocation'),
             education=data_dict.get('education'),
             familyType=data_dict.get('familyType'),

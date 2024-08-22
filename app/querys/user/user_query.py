@@ -209,14 +209,13 @@ def AddProfileForUser(userId: int):
 
 def AddProfile():
     Logger.debug("Generated SQL query for adding profile")
-    return f"INSERT INTO Profiles_M (UserId, ProfilePicture, Bio, Unmarried, Divorced, PreferredLocation, Education, FamilyType, PreferredProfession, DesiredFamilyBackground, DesiredColorComplexion, Location) VALUES (%(userId)s, %(profilePicture)s, %(bio)s, %(unmarried)s, %(divorced)s, %(preferredLocation)s, %(education)s, %(familyType)s, %(preferredProfession)s, %(desiredFamilyBackground)s, %(desiredColorComplexion)s, %(location)s)"
+    return f"INSERT INTO Profiles_M (UserId, ProfilePicture, Bio, MaritalStatus, PreferredLocation, Education, FamilyType, PreferredProfession, DesiredFamilyBackground, DesiredColorComplexion, Location) VALUES (%(userId)s, %(profilePicture)s, %(bio)s, %(maritalStatus)s, %(preferredLocation)s, %(education)s, %(familyType)s, %(preferredProfession)s, %(desiredFamilyBackground)s, %(desiredColorComplexion)s, %(location)s)"
 
 def UpdateProfile():
     Logger.debug("Generated SQL query for updating profile")
     return f"""UPDATE Profiles_M 
 SET 
-    Unmarried = %(unmarried)s,
-    Divorced = %(divorced)s,
+    MaritalStatus = %(maritalStatus)s,
     PreferredLocation = %(preferredLocation)s,
     Education = %(education)s,
     FamilyType = %(familyType)s,
