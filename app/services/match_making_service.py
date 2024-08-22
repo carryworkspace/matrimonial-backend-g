@@ -36,17 +36,18 @@ class MatchMakingService:
                 # # Process the results
                 if len(sorted_scores_df) == 0:
                     Logger.info("Matchmaking has been already completed for this Profile  or does not have opposite gender data.")
-                    return json.dumps({"status": "success", "message": "Match making has been already completed for this Profile or does not have opposite gender data.",}), 200
+                    # return json.dumps({"status": "success", "message": "Match making has been already completed for this Profile or does not have opposite gender data.",}), 200
+                    continue
                 
                 db, cursorDb = createDbConnection() 
                 Logger.debug("Database connection created for inserting match data")
                 for match in sorted_scores_df:
                     model = MatchProfileModel.fill_model(match)
-                    Logger.debug(f"Model data filled for match: {len(model.__dict__.keys())} with score of : {model.matchScore} and MainProfile: {model.mainProfileId} and Other Profile: {model.profileId}")
                     model.mainProfileId = profileId
+                    Logger.debug(f"Model data filled for match count: {len(model.__dict__.keys())} with score of : {model.matchScore} and MainProfile: {model.mainProfileId} and Other Profile: {model.profileId}")
                     
                     if model.matchScore == 0:
-                        Logger.warning(f"Match score is 0, skipping this match for ProfileId: {model.matchScore}")
+                        Logger.warning(f"Match score is 0, skipping this match for ProfileId: {model.profileId}")
                         continue
                     cursorDb.execute(querys.AddMatchedProfile(), model.__dict__)
                     db.commit()
@@ -86,10 +87,22 @@ class MatchMakingService:
             Logger.info("Closing database connection")
             Logger.info(f"*************** Finished Matchmaking ****************")
             
+    def sleep_timer(self, total_time=30, interval=2):
+        start_time = time.time()
+        end_time = start_time + total_time
+
+        while time.time() < end_time:
+            current_time = time.time()
+            remaining_time = end_time - current_time
+            if remaining_time <= 0:
+                break
+            Logger.warning(f"Match Making Service will starts again in: {int(remaining_time)} seconds")
+            # Logger.warning(f"Time left: {int(remaining_time)} seconds")
+            time.sleep(interval)
+    
     def start_service(self):
         while True:
             self.start_match_making()
             sleepTime = 60 * 10
-            Logger.warning(f"Waiting for {sleepTime} seconds before checking again")
-            time.sleep(sleepTime)  # Wait for 10 minute before checking again
+            self.sleep_timer(total_time=sleepTime)
             

@@ -84,8 +84,8 @@ class AstroService:
             "Authorization": f"Bearer {self.access_token}"
         }
         params = {
-            'boy_dob': f"{boy_detail['dob']}T{boy_detail['tob']}+05:30",
-            'girl_dob': f"{girl_detail['dob']}T{girl_detail['tob']}+05:30",
+            'boy_dob': f"{boy_detail['dob']}T{boy_detail['tob']}:00+05:30",
+            'girl_dob': f"{girl_detail['dob']}T{girl_detail['tob']}:00+05:30",
             'girl_coordinates': girl_detail['cordinates'],
             'boy_coordinates': boy_detail['cordinates'],
             'ayanamsa': 1
@@ -194,9 +194,9 @@ class AstroService:
     
     def get_gunn_score(self, main_dict: dict, user_dict: dict):
         
-        main_address = main_dict.get('Address', None)
+        main_address = main_dict.get('City', None)
         main_date = main_dict.get('Dob', None)
-        main_time = main_dict.get('time', None)
+        main_time = main_dict.get('Time', None)
         if is_null_or_empty(main_address):
             Logger.warning(f"Failed to fetch coordinates for address")
             main_address = f"{main_dict.get('City', '')}, {main_dict.get('State', '')}, {main_dict.get('Country', '')}"
@@ -215,9 +215,9 @@ class AstroService:
             'tob': main_time,
             'cordinates': f"{main_lat},{main_lon}",
         }
-        other_address = user_dict.get('Address', None)
+        other_address = user_dict.get('City', None)
         other_date = user_dict.get('Dob', None)
-        other_time = user_dict.get('time', None)
+        other_time = user_dict.get('Time', None)
             
         if is_null_or_empty(other_address):
             Logger.warning("Other profile address is missing or empty, setting default address.")

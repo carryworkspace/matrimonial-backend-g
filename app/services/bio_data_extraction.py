@@ -269,7 +269,19 @@ class GoogleDrive:
       print(tb)
       Logger.error(f"An error occurred: {tb}")
       return json.dumps({"status": "failed", "message": str(e)})
+    
+  def sleep_timer(self, total_time=30, interval=2):
+        start_time = time.time()
+        end_time = start_time + total_time
 
+        while time.time() < end_time:
+            current_time = time.time()
+            remaining_time = end_time - current_time
+            if remaining_time <= 0:
+                break
+            Logger.warning(f"Google Drive Service will starts again in: {int(remaining_time)} seconds")
+            # Logger.warning(f"Time left: {int(remaining_time)} seconds")
+            time.sleep(interval)
   
   def start_service(self):
     while True:
@@ -283,5 +295,4 @@ class GoogleDrive:
         Logger.error(f"An error occurred while starting the service. {e}")
         
       sleepTime = 60 * 10
-      Logger.warning(f"Waiting for {sleepTime} seconds before checking again")
-      time.sleep(sleepTime)  # Wait for 10 minute before checking again
+      self.sleep_timer(total_time=sleepTime)

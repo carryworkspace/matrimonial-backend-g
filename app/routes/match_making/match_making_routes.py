@@ -86,7 +86,7 @@ def perform_matchmaking():
         # return json.dumps(sorted_scores_df)
     
     except mysql.connector.Error as e:
-        Logger.error(f"JSON Decode Error: {jd}")
+        Logger.error(f"JSON Decode Error: {e}")
             # print(f"Error: {e} This is Erorr")
         return json.dumps({"status": "failed", 'message': "some error occurs, in query execution"}), 400
     except json.JSONDecodeError as jd:
