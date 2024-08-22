@@ -57,3 +57,4 @@ venv
 .conf
 credentials_bio.json
 app/services/credentials_bio.json
+smartmahesshri.conf
