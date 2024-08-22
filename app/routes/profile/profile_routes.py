@@ -195,9 +195,30 @@ def get_profile_picture():
             return json.dumps({"status": "failed", "message":'User not specified or user id not provided'}), 400
         
         cursorDb.execute(querys.GetProfilePicture(userId))
-        requestFileName = cursorDb.fetchall()[0]["ProfilePicture"]
+        profile_data = cursorDb.fetchall()
+        
+        if len(profile_data) == 0:
+            Logger.info(f"User ID does not exist in database: {userId} for profile data")
+            return json.dumps({"status": "failed", "message": "User ID does not exist in database profile table"})
+        
+        cursorDb.execute(querys.GetMatrimonialData(userId))
+        matrimonial_data = cursorDb.fetchall()
+        gender: str = 'Default'
+        if len(matrimonial_data) == 0:
+            Logger.info(f"User ID does not exist in database: {userId} no matrimonial data found")
+        else:
+            gender = matrimonial_data[0]["Gender"]
+        
+        
+        requestFileName = profile_data[0]["ProfilePicture"]
         if is_null_or_empty(requestFileName):
-            requestFileName = Config.DEFAULT_PROFILE_PIC
+            if gender.lower() == "male":
+                requestFileName = Config.DEFAULT_PROFILE_PIC_MALE
+            elif gender.lower() == "female":
+                requestFileName = Config.DEFAULT_PROFILE_PIC_FEMALE
+            else:
+                requestFileName = Config.DEFAULT_PROFILE_PIC
+                
         Logger.debug(f"Fetched profile picture filename: {requestFileName}")
         profile_path = os.path.join(upload_folder, requestFileName)
         if not os.path.exists(profile_path):
