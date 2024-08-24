@@ -15,6 +15,7 @@ from app.services.match_making_service import MatchMakingService
 from app.services.mapping_match_making_service import MappingMatchMakingService
 from datetime import datetime
 import traceback
+import math
 
 @Router.route('/matchmaking', methods=['GET'])
 @cross_origin(supports_credentials=True)
@@ -184,6 +185,10 @@ def match_making_result():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = createDbConnection()
     user_match_making_results = []
+    male_max_age_diff = -3
+    male_min_age_diff = 1
+    female_min_age_diff = 3
+    female_max_age_diff = -1
     try:
         Logger.info("Starting match_making_status function")
         mainProfileId :int = 0
@@ -203,6 +208,10 @@ def match_making_result():
         Logger.debug(f"Database query result: {len(user_exists)}")
         if len(user_exists) == 0:
             return json.dumps({"status": "success", "message": "Matchmaking is Inprogress.", 'user_details': user_match_making_results}), 200
+        
+        main_profile_dob = user_exists[0]["Dob"]
+        main_profile_gender = user_exists[0]["Gender"]
+        main_profile_age = calculate_age(main_profile_dob)
         
         cursorDb.execute(querys.GetMatchedProfiles(mainProfileId))
         matched_profiles = cursorDb.fetchall()
@@ -239,8 +248,34 @@ def match_making_result():
                 if int(height) < 50:
                     height = 165
                 
-                dob_datetime = datetime.strptime(dob, '%Y-%m-%d')
-                age = calculate_age(dob_datetime)
+                age = calculate_age(dob)
+                
+                age_diff = main_profile_age - age
+                age_diff_ok = False
+                
+                # check for max male age under constant value
+                if main_profile_gender.lower() == "male":
+                    Logger.info(f"Checking age difference for male profile")
+                    age_diff_ok = age_diff <= female_min_age_diff and age_diff >= female_max_age_diff
+                    Logger.info(f"Age difference check result: {age_diff_ok}")
+                    
+                # check female max age under or equal to the constant value
+                elif main_profile_gender.lower() == "female":
+                    Logger.info(f"Checking age difference for female profile")
+                    age_diff_ok = age_diff <= male_min_age_diff and age_diff >= male_max_age_diff
+                    Logger.info(f"Age difference check result: {age_diff_ok}")
+                    
+                else:
+                    Logger.info(f"Checking age difference for other gender profile")
+                    age_diff_ok = age_diff <= 1 or age_diff >= 1
+                    Logger.info(f"Age difference check result: {age_diff_ok}")
+                    
+                if age_diff_ok == False:
+                    Logger.warning(f"Age difference not satisfied for profileId: {otherProfileId}")
+                    Logger.warning(f"Skiping the profile")
+                    continue
+                    
+                
                 
                 height = str(cm_to_feet(height))
                 height_ft = height.split(".")[0]+ " Ft"
@@ -299,8 +334,10 @@ def match_making_result():
                 traceback.print_exc()
                 print(tb)
                 db.rollback()
-                Logger.error(f"Error occurred while filling object for match making: {e}")
-                match_making_result["Error"] = f"Some error occurs for key: {e}"
+                Logger.error(f"Error occurred while filling object for match making: {tb}")
+                Logger.error(f"Skiping data for profile Id: {otherProfileId}")
+                continue
+                # match_making_result["Error"] = f"Some error occurs for key: {e}"
             user_match_making_results.append(match_making_result)
             
         Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
