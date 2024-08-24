@@ -207,7 +207,7 @@ class AstroService:
         
         if is_null_or_empty(main_time):
             Logger.warning(f"Failed to fetch astrology main profile time. setting up default time")
-            main_time = "14:20:00"
+            main_time = "14:20"
         
         main_lat, main_lon = self.get_coordinates(main_address)
         main_profile_object = {
@@ -229,7 +229,7 @@ class AstroService:
         
         if is_null_or_empty(other_time):
             Logger.warning("Other profile time is missing or empty, setting default time.")
-            other_time = "14:20:00"
+            other_time = "14:20"
 
         
         other_lat, other_lon = self.get_coordinates(other_address)

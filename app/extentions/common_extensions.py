@@ -490,10 +490,15 @@ def detect_environment():
             return 'local'
     return "server"
     
-    # Check if the remote IP is localhost or a private IP range (indicating local machine)
-    # if remote_ip in ['127.0.0.1', '::1'] or remote_ip.startswith('192.168.') or remote_ip.startswith('10.') or remote_ip.startswith('172.'):
-    #     return 'local'
-    # else:
-    #     return 'server'
-    
+def count_matching_hobbies(field1, field2):
+# Split each field by commas and strip any leading/trailing whitespace
+    hobbies1 = set(hobby.strip().lower() for hobby in field1.split(','))
+    hobbies2 = set(hobby.strip().lower() for hobby in field2.split(','))
+
+    # Find the intersection of both sets (common hobbies)
+    common_hobbies = hobbies1 & hobbies2
+
+    # Return the number of matched hobbies
+    return len(common_hobbies)
+
 print(detect_environment())

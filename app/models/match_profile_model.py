@@ -1,16 +1,18 @@
 class MatchProfileModel:
 
-    def __init__(self, profileId: str=None, matchScore=None,
+    def __init__(self, profileId: str=None, matchScore=None, gunnMatchScore=None,
                  mainProfileId: int= None):
         self.profileId = profileId
         self.matchScore = matchScore
         self.mainProfileId = mainProfileId
+        self.gunnMatchScore = None
 
     @classmethod
     def fill_model(cls, data_dict):
         return cls(
             profileId=data_dict.get('ProfileId'),
             matchScore=data_dict.get('Score'),
+            gunnMatchScore = data_dict.get('GunnScore'),
             mainProfileId=data_dict.get('mainProfileId')
         )
 

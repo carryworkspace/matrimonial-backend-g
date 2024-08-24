@@ -113,11 +113,13 @@ def AddMatchedProfile():
     INSERT INTO MatchedProfiles_M (
         OtherProfileId,
         MatchScore,
+        GunnMatchScore,
         IsExpired,
         MainProfileId
     ) VALUES (
         %(profileId)s,
         %(matchScore)s,
+        %(gunnMatchScore)s,
         0,
         %(mainProfileId)s
     );

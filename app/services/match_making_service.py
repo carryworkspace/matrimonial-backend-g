@@ -30,7 +30,7 @@ class MatchMakingService:
                 
                 cursorDb.execute(querys.UpdateMatchQueuedFlag(matched_flag=0, profileId=profileId, processing_flag=1))
                 db.commit()
-                sorted_scores_df = _matching.find_all_matches(profileId)
+                sorted_scores_df, gun_scores = _matching.find_all_matches(profileId)
                 Logger.debug(f"Sorted scores data frame: {sorted_scores_df}")
                 
                 # # Process the results
@@ -43,6 +43,10 @@ class MatchMakingService:
                 Logger.debug("Database connection created for inserting match data")
                 for match in sorted_scores_df:
                     model = MatchProfileModel.fill_model(match)
+                    if gun_scores.__contains__(model.profileId):
+                        model.gunnMatchScore = gun_scores[model.profileId]
+                        Logger.debug(f"Match score updated for ProfileId: {model.profileId} with score: {model.gunnMatchScore}")
+                        
                     model.mainProfileId = profileId
                     Logger.debug(f"Model data filled for match count: {len(model.__dict__.keys())} with score of : {model.matchScore} and MainProfile: {model.mainProfileId} and Other Profile: {model.profileId}")
                     

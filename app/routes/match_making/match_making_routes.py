@@ -222,11 +222,12 @@ def match_making_result():
             upload_folder = Config.PROFILE_PIC_PATH
             try:
                 otherProfileId = match_profile["OtherProfileId"]
+                gunn_score = match_profile["GunnMatchScore"]
                 cursorDb.execute(querys.GetMatrimonialData(profileId=otherProfileId))
                 profile = cursorDb.fetchone()
                 
                 if profile == None:
-                    Logger.info(f"Profile not found for profileId: {otherProfileId}")
+                    Logger.info(f"Matrimonial Profile not found for profileId: {otherProfileId}")
                     continue
                 
                 # print("PROFILEDIEDFDFDJ:LJSDLKFJKSDLJFLKSF:", profile, otherProfileId)
@@ -258,20 +259,24 @@ def match_making_result():
                     Logger.info(f"Checking age difference for male profile")
                     age_diff_ok = age_diff <= female_min_age_diff and age_diff >= female_max_age_diff
                     Logger.info(f"Age difference check result: {age_diff_ok}")
+                    Logger.info(f"main_profile_age: {main_profile_age} and other Age: {age}")
                     
                 # check female max age under or equal to the constant value
                 elif main_profile_gender.lower() == "female":
                     Logger.info(f"Checking age difference for female profile")
                     age_diff_ok = age_diff <= male_min_age_diff and age_diff >= male_max_age_diff
                     Logger.info(f"Age difference check result: {age_diff_ok}")
+                    Logger.info(f"main_profile_age: {main_profile_age} and other Age: {age}")
                     
                 else:
                     Logger.info(f"Checking age difference for other gender profile")
                     age_diff_ok = age_diff <= 1 or age_diff >= 1
                     Logger.info(f"Age difference check result: {age_diff_ok}")
+                    Logger.info(f"main_profile_age: {main_profile_age} and other Age: {age}")
                     
                 if age_diff_ok == False:
-                    Logger.warning(f"Age difference not satisfied for profileId: {otherProfileId}")
+                    Logger.warning(f"Age difference : {age_diff} is not satisfied for profileId: {otherProfileId}")
+                    Logger.info(f"main_profile_age: {main_profile_age} and other Age: {age}")
                     Logger.warning(f"Skiping the profile")
                     continue
                     
@@ -282,7 +287,14 @@ def match_making_result():
                 height_inches = height.split(".")[1][:1]+ " Inches" 
                 final_height = height_ft + " "+ height_inches
                 
-                location = city+ ", "+ state
+                if is_null_or_empty(city):
+                    location = state
+                elif is_null_or_empty(state):
+                    location = city
+                elif is_null_or_empty(city) and is_null_or_empty(state):
+                    location = None
+                else:
+                    location = city+ ", "+ state
                 
                 # filling dictionary for result
                 match_making_result["profileId"] = otherProfileId
@@ -292,6 +304,7 @@ def match_making_result():
                 match_making_result["height"] = final_height
                 match_making_result["location"] = location
                 match_making_result["SubscribeToken"] = subscribeToken
+                match_making_result["gunnScore"] = str(gunn_score)
                 
                 # fetch profile picure
                 cursorDb.execute(querys.GetProfilePictureById(otherProfileId))
@@ -302,8 +315,13 @@ def match_making_result():
                     
                 else:
                     requestFileName = profile_picture_data["ProfilePicture"]
-                    if requestFileName == None or requestFileName == "":
-                        requestFileName = Config.DEFAULT_PROFILE_PIC
+                    if is_null_or_empty(requestFileName):
+                        if gender.lower() == "male":
+                            requestFileName = Config.DEFAULT_PROFILE_PIC_MALE
+                        elif gender.lower() == "female":
+                            requestFileName = Config.DEFAULT_PROFILE_PIC_FEMALE
+                        else:
+                            requestFileName = Config.DEFAULT_PROFILE_PIC
                         
                     Logger.debug(f"Fetched profile picture filename: {requestFileName}")
                     profile_path = os.path.join(upload_folder, requestFileName)
@@ -399,7 +417,7 @@ def update_match_making_profile_viewed():
             cursorDb.execute(querys.UpdateViewedStatusMatchedProfile(id))
             db.commit()
             return json.dumps({'status': 'success', 'message': 'updated status of viewed'}), 200
-        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
+        
     except mysql.connector.Error as e:
         Logger.error(f"MySQL Database Error: {e}")
         return json.dumps({"status": "failed", 'message': "some error occurs, in query execution"}), 400
@@ -420,6 +438,7 @@ def update_match_making_profile_viewed():
     finally:
         closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         Logger.info("Closing database connection")
 
 @Router.route('/download-bio-data', methods=['GET'])

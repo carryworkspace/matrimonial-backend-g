@@ -27,6 +27,25 @@ from app.models.matrimonial_profile_model import MatrimonialProfileModel
 def authorize_request():
     """Verifying each request to be authrized
     """
+    try:
+        data = request.get_json()
+        Logger.warning(f"*** Payload: {data} **** ")
+        
+    except:
+        pass
+    
+    try:
+        data = request.args
+        Logger.warning(f"*** Payload: {data} **** ")
+    except:
+        pass
+    
+    try:
+        data = request.form
+        Logger.warning(f"*** Payload: {data} **** ")
+    except:
+        pass 
+    
     if 'request_otp' not in request.endpoint and 'verify_otp' not in request.endpoint:  # Exclude the 'login' endpoint from authorization check
         Logger.info("Request authorization check")
         # error_response = check_request_authorized(request)

@@ -1,6 +1,6 @@
 import pandas as pd
 from app.routes import createDbConnection, closeDbConnection
-from app.extentions.common_extensions import feet_to_cm, is_null_or_empty, split_list
+from app.extentions.common_extensions import feet_to_cm, is_null_or_empty, split_list, count_matching_hobbies
 import json
 from app.extentions.chatgpt import Chatgpt
 from app.services.astrology_data_service import AstroService
@@ -131,6 +131,7 @@ class MatchmakingScore:
         matrimonial_attributes = list(main_profile.keys())
         user_dict = user_preferences
         scores = {}
+        gun_scores = {}
         user_gotra = main_profile.get('Gotra', '')
         user_subCaste = main_profile.get('SubCaste', '')
         Logger.debug(f"Main profile: {main_profile}")
@@ -154,23 +155,18 @@ class MatchmakingScore:
                 continue
             
             # check if users subCaste are same it other profile is not selected
-            # if is_null_or_empty(user_subCaste) or is_null_or_empty(profile_subCaste):
-                # continue
-                # if user_subCaste == profile_subCaste:
-                #     scores[profileId] = 0
-                #     Logger.warning(f"Profile {profileId} skipped due to null or empty SubCaste")
+            if is_null_or_empty(user_subCaste) or is_null_or_empty(profile_subCaste):
+                Logger.warning(f"Profile {profileId} skipped due to null or empty SubCaste")
+                continue
+            elif user_subCaste == profile_subCaste:
+                scores[profileId] = 0
+                Logger.debug(f"Profile {profileId} skipped due to matching SubCaste or same subcaste")
                 
             
             score = 0
             properties_mached = []
-            
             matchMaritalFound = False
-            #get score for matrimonial profile
-            # for attr in matrimonial_attributes:
-                
-                    # print(attr)
-                    # main_marital_status = main_profile.get(attr)
-                # if matchMaritalFound == False:
+            
             attr = "MaritalStatus"
             try:  
                 other_marital_status: str = str(profile_dict.get(attr))
@@ -217,42 +213,6 @@ class MatchmakingScore:
                 
             except Exception as e:
                 Logger.error(f"Marital Error{e}")
-                        
-                # if attr not in ['UpdatedAt', 'AboutMe', 'astro_flag', 'LanguagesKnown', 'Interests', 'OccupationCompany', 'matching_flag', 'OccupationLocation', 'AdditionalQualification', 'YearOfPassing', 'Institution', 'MotherName', 'FatherName', 'ZipCode', 'Email', 'PhoneNumber', 'Address', 'Religion', 'Caste', 'BloodGroup', 'Gender', 'ProfileId', 'Name', 'Id', 'AnnualIncomeINR', 'Time', 'Subscribe_Token', 'CreatedAt', 'IsActive']:
-                    # if main_profile.get(attr) == profile_dict.get(attr):
-                    #     properties_mached.append(attr)
-                    #     score += 1
-                    #     Logger.debug(f"Attribute {attr} matched for profile {profileId}, score incremented")
-                    
-                    # try:    
-                    #     # score for marital status
-                    #     if attr == "MaritalStatus":
-                            
-                    #         matchMaritalFound = False
-                    #         # print(attr)
-                    #         # main_marital_status = main_profile.get(attr)
-                    #         if main_profile.get(attr) == 'Single' and (user_dict["Unmarried"]) == 1:
-                    #             properties_mached.append(attr)
-                    #             score += Config.MM_SCORE_5
-                    #             matchMaritalFound = True
-                                
-                    #             Logger.debug(f"MaritalStatus matched (Single) for profile {profileId}, score incremented")
-                    #         elif main_profile.get(attr) == 'Married' and (user_dict["Unmarried"]) == 0:
-                    #             properties_mached.append(attr)
-                    #             score += Config.MM_SCORE_5
-                    #             matchMaritalFound = True
-                                
-                    #             Logger.debug(f"MaritalStatus matched (Married) for profile {profileId}, score incremented")
-                    #         elif main_profile.get(attr) == 'Divorced' and (user_dict["Divorced"]) == 1:
-                    #             properties_mached.append(attr)
-                    #             score += Config.MM_SCORE_5
-                    #             matchMaritalFound = True
-                    #             Logger.debug(f"MaritalStatus matched (Divorced) for profile {profileId}, score incremented")
-                            
-                    #     if matchMaritalFound == False:
-                    #         break
-                    # except Exception as e:
-                    #     Logger.error(f"Marital Error{e}")
                         
             try:   
                 # location score 
@@ -316,14 +276,19 @@ class MatchmakingScore:
                 
                 else:                
                     properties_mached.append(attr)
-                    count = Chatgpt().matching_job_title(preferredProfession, occupation)
-                    if count == 0:
-                        if preferredProfession.__contains__(occupation):
-                            count = Config.MM_SCORE_10
-                        elif occupation.__contains__(preferredProfession):
-                            count = Config.MM_SCORE_10
-                        elif preferredProfession == 'No Preference':
-                            count = Config.MM_SCORE_10
+                    if preferredProfession == 'No Preference':
+                        count = Config.MM_SCORE_10
+                        Logger.debug(f"No Preference Occupation for profile {profileId}, score incremented")
+                            
+                    else:
+                        count = Chatgpt().matching_job_title(preferredProfession, occupation)
+                        if count == 0:
+                            if preferredProfession.__contains__(occupation):
+                                count = Config.MM_SCORE_10
+                            elif occupation.__contains__(preferredProfession):
+                                count = Config.MM_SCORE_10
+                            elif occupation == preferredProfession:
+                                count = Config.MM_SCORE_10
                     
                 Logger.debug(f"Matching job titles count: {count}")
                 print("count", count)
@@ -343,25 +308,40 @@ class MatchmakingScore:
                     Logger.info(f"User Hobbies : {user_hobbies} or Other Hobbies may be null or empty : {other_hobbies} skiping hobbies matching.")
                 
                 else:
-                    if other_hobbies.__contains__(user_hobbies):
-                        properties_mached.append(attr)
-                        score += Config.MM_SCORE_10
-                        Logger.debug(f"Hobbies matched for profile {profileId}, score incremented")
+                    first_5_letter_other = other_hobbies[:5]
+                    first_5_letter_user = user_hobbies[:5]
+                    matches_found = count_matching_hobbies(other_hobbies, user_hobbies)
                     
-                    elif user_hobbies.__contains__(other_hobbies):
-                        properties_mached.append(attr)
-                        score += Config.MM_SCORE_10
-                        Logger.debug(f"Hobbies matched for profile {profileId}, score incremented")
+                    if matches_found == 0:
+                        if first_5_letter_other == first_5_letter_user:
+                            properties_mached.append(attr)
+                            score += Config.MM_SCORE_10
+                            Logger.debug(f"Hobbies matched for profile {profileId}, score incremented")
+                            
+                        elif other_hobbies.__contains__(user_hobbies):
+                            properties_mached.append(attr)
+                            score += Config.MM_SCORE_10
+                            Logger.debug(f"Hobbies matched for profile {profileId}, score incremented")
                         
-                    elif other_hobbies == user_hobbies:
+                        elif user_hobbies.__contains__(other_hobbies):
+                            properties_mached.append(attr)
+                            score += Config.MM_SCORE_10
+                            Logger.debug(f"Hobbies matched for profile {profileId}, score incremented")
+                            
+                        elif other_hobbies == user_hobbies:
+                            properties_mached.append(attr)
+                            score += Config.MM_SCORE_10
+                            Logger.debug(f"Hobbies matched for profile {profileId}, score incremented")
+                            
+                        elif user_hobbies == 'No Preference':
+                            properties_mached.append(attr)
+                            score += Config.MM_SCORE_10
+                            Logger.debug(f"No Preference hobbies for profile {profileId}, score incremented")
+                            
+                    else:
+                        score += matches_found * Config.MM_SCORE_10
                         properties_mached.append(attr)
-                        score += Config.MM_SCORE_10
-                        Logger.debug(f"Hobbies matched for profile {profileId}, score incremented")
-                        
-                    elif user_hobbies == 'No Preference':
-                        properties_mached.append(attr)
-                        score += Config.MM_SCORE_10
-                        Logger.debug(f"No Preference hobbies for profile {profileId}, score incremented")
+                        Logger.debug(f"Hobbies matched for profile {profileId}, score incremented for : {matches_found} hobbies")
                         
             except Exception as e:
                 Logger.error(f"Hobbies error: {e}")
@@ -400,42 +380,47 @@ class MatchmakingScore:
                     Logger.warning(f"Height for profile {profileId} is null or empty")
 
                 else:               
+                    other_height: int = int(profile.get(attr).split(".")[0])
+                    user_height = user_dict.get('Height')
                     
                     if other_height < 50:
                         Logger.warning(f"Height for profile {profileId} is less than 50")
-                    else: 
-                        other_height: int = int(profile.get(attr).split(".")[0])
-                        user_height = user_dict.get('Height')
-                        
-                        if user_height == "Below 5ft":
-                            if other_height < feet_to_cm(5):
-                                properties_mached.append(attr)
-                                score += Config.MM_SCORE_5
-                                Logger.debug(f"Height matched (Below 5ft) for profile {profileId}, score incremented")
-
-                        elif user_height == "5.1ft to 5.7ft":
-                            if other_height < feet_to_cm(5.7) and other_height > feet_to_cm(5.1):
-                                properties_mached.append(attr)
-                                score += Config.MM_SCORE_5
-                                Logger.debug(f"Height matched (5.1ft to 5.7ft) for profile {profileId}, score incremented")
-                                
-                        elif user_height == "5.8ft to 5.11ft":
-                            Logger.debug(f"Height matched (5.8ft to 5.11ft) for profile {profileId}, score incremented")
-                            if other_height < feet_to_cm(5.11) and other_height > feet_to_cm(5.8):
-                                properties_mached.append(attr)
-                                score += Config.MM_SCORE_5
-                                
-                        elif user_height == "Above 6ft":
-                            if other_height > feet_to_cm(6):
-                                properties_mached.append(attr)
-                                score += Config.MM_SCORE_5
-                                Logger.debug(f"Height matched (Above 6ft) for profile {profileId}, score incremented")
-                                
-                        elif user_height == 'No Preference':
+                    
+                    if user_height == "Below 5ft":
+                        if other_height < feet_to_cm(5):
                             properties_mached.append(attr)
                             score += Config.MM_SCORE_5
-                            Logger.debug(f"Height matched No Preference {attr} for profile {profileId}, score incremented")
-                
+                            Logger.debug(f"Height matched (Below 5ft) for profile {profileId}, score incremented")
+
+                    elif user_height == "5.0ft to 5.4ft":
+                        if other_height < feet_to_cm(5.0) and other_height > feet_to_cm(5.4):
+                            properties_mached.append(attr)
+                            score += Config.MM_SCORE_5
+                            Logger.debug(f"Height matched (5.0ft to 5.4ft) for profile {profileId}, score incremented")
+                            
+                    elif user_height == "5.5ft to 5.7ft":
+                        Logger.debug(f"Height matched (5.8ft to 5.11ft) for profile {profileId}, score incremented")
+                        if other_height < feet_to_cm(5.7) and other_height > feet_to_cm(5.5):
+                            properties_mached.append(attr)
+                            score += Config.MM_SCORE_5
+                            
+                    elif user_height == "5.9ft to 5.11ft":
+                        Logger.debug(f"Height matched (5.9ft to 5.11ft) for profile {profileId}, score incremented")
+                        if other_height < feet_to_cm(5.11) and other_height > feet_to_cm(5.9):
+                            properties_mached.append(attr)
+                            score += Config.MM_SCORE_5
+                            
+                    elif user_height == "Above 6ft":
+                        if other_height > feet_to_cm(6):
+                            properties_mached.append(attr)
+                            score += Config.MM_SCORE_5
+                            Logger.debug(f"Height matched (Above 6ft) for profile {profileId}, score incremented")
+                            
+                    elif user_height == 'No Preference':
+                        properties_mached.append(attr)
+                        score += Config.MM_SCORE_5
+                        Logger.debug(f"Height matched No Preference {attr} for profile {profileId}, score incremented")
+            
             except Exception as e:
                 Logger.error(f"Height error: {e}")
 
@@ -502,8 +487,10 @@ class MatchmakingScore:
                         is_astro_method_called = True
                         
                     astro_response = astro_api.get_gunn_score(main_dict=main_profile, user_dict=profile)
-                    print(astro_response.guna_milan.total_points)
+                    print(f"ASTRO POINTS ARE: {astro_response.guna_milan.total_points}")
+                    
                     score += int(astro_response.guna_milan.total_points)
+                    gun_scores[profileId] = int(astro_response.guna_milan.total_points)
                     print(score)
                     Logger.debug(f"Astrology score added for profile {profileId}, total score: {score}") 
                     
@@ -518,7 +505,7 @@ class MatchmakingScore:
             scores[profileId] = score
             # if other_preferences[1] == profile:
             #     break
-        return scores
+        return scores, gun_scores
     
     
 
@@ -528,7 +515,7 @@ class MatchmakingScore:
         user_preferences = self.get_user_preferences(profile_id)
         if len(user_preferences) == 0:
             Logger.warning(f"User Preferance data or Profile data not found for the user id: {profile_id}")
-            return pd.DataFrame()
+            return pd.DataFrame(), {}
         
         user_preferences = user_preferences[0]
         
@@ -542,7 +529,7 @@ class MatchmakingScore:
                 Logger.warning(f"Match making already competed for this profile id: {profile_id} updating status in queued.")
                 cursorDb.execute(querys.UpdateMatchQueuedFlag(matched_flag=1, profileId=profile_id, processing_flag=0))
                 db.commit()  
-            return pd.DataFrame()
+            return pd.DataFrame(), {}
         
         
         main_preferences = main_preferences[0]
@@ -559,7 +546,7 @@ class MatchmakingScore:
         if len(other_preferences) == 0:
             Logger.warning(f"NO Other User Found for Matchmaking With Opposite Gender: {user_gender}")
             cursorDb.execute(querys.UpdateMatchQueuedFlag(matched_flag=0, profileId=profile_id, processing_flag=0))
-            return pd.DataFrame()
+            return pd.DataFrame(), {}
         
         # remove ids that has already match making done
         alreadyMatched = self.get_already_matched_profileIds(profile_id)
@@ -573,8 +560,8 @@ class MatchmakingScore:
         print("Total items:", len(other_preferences))
         res = MultiProcess()
         
-        scores = res.process(self.calculate_scores,main_preferences, other_preferences, user_preferences)
-        # scores = self.calculate_scores(main_preferences, other_preferences, user_preferences)
+        scores, gun_scores = res.process(self.calculate_scores,main_preferences, other_preferences, user_preferences)
+        # scores, gun_scores = self.calculate_scores(main_preferences, other_preferences, user_preferences)
         print(scores)
         Logger.info(f"Scores calculated for profile_id: {profile_id}")
         Logger.debug(f"Calculated scores: {scores}")
@@ -584,5 +571,5 @@ class MatchmakingScore:
         
         Logger.info(f"Sorted scores for profile_id {profile_id} obtained")
         Logger.debug(f"Sorted scores DataFrame: {sorted_scores_df}")
-        return sorted_scores_df.to_dict(orient='records')
+        return sorted_scores_df.to_dict(orient='records'), gun_scores
     
