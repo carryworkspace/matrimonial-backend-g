@@ -501,21 +501,70 @@ def add_bio_data_pdf():
                 Logger.debug(f"Last inserted row ID: {cursorDb.lastrowid}")
 
         # _chatgpt = Chatgpt()
-        exeptionOccurs = True
-        tries: int = 0
-        while exeptionOccurs and tries < 3:
-            try:
-                exeptionOccurs = False
-                tries += 1
-                Logger.debug(f"Attempt {tries} to process PDF data")
-                bio_data_json = chatgpt_pdf_to_json(pdf_file_path)
-                response_payload_json = bio_data_json
-                jsonObject = json.loads(response_payload_json)
+        Logger.debug(f"Starting extraction of pdf")
+        bio_data_json = chatgpt_pdf_to_json(pdf_file_path)
+        response_payload_json = bio_data_json
+        
+        if is_null_or_empty(response_payload_json) or response_payload_json.__contains__('sorry') or response_payload_json.__contains__('apologize'):
+              Logger.warning(f"No data extracted from pdf file: {model.pdfName}")
+              return json.dumps({'status': 'success', 'message': query_payload}), 200
+        
+        jsonObject = json.loads(response_payload_json)
+        phoneNumberStr: str = str(jsonObject['phoneNumber'])
+        
+        date_of_birth = jsonObject['dob']
+        if date_of_birth.__contains__('yy'):
+            Logger.warning(f"Date of birth is not in correct format: {date_of_birth}")
+            return json.dumps({'status': 'success', 'message': query_payload}), 200
+        
+        pdf_text = extract_text_from_pdf(pdf_file_path)
+        if is_null_or_empty(pdf_text):
+              Logger.warning(f"No data extracted from pdf file: {model.pdfName}")
+              return json.dumps({'status': 'success', 'message': query_payload}), 200   
+        
+        if is_null_or_empty(phoneNumberStr):
+              Logger.warning(f"No phone number: {phoneNumberStr} found in the extracted data for file: {model.pdfName}")
+              phoneNumber = extract_phone_numbers(pdf_text)
+              if is_null_or_empty(phoneNumber) == False:
+                Logger.debug(f"Extracted phone number: {phoneNumber} from pdf file: {model.pdfName}")
+                phoneNumberStr = str(phoneNumber)
+                jsonObject['phoneNumber'] = phoneNumberStr
+              else:
+                Logger.warning(f"No phone number found in the extracted data for file: {model.pdfName}")
+                return json.dumps({'status': 'success', 'message': query_payload}), 200
+        else:
+            Logger.debug(f"Extracted phone number: {phoneNumberStr} from pdf file: {model.pdfName}")
+            phoneNumber: int = get_phone_number(phoneNumberStr)  
+            if is_number_zero(phoneNumber) == False:
+                jsonObject['phoneNumber'] = str(phoneNumber)
+                Logger.debug(f"Extracted phone number: {phoneNumber} from pdf file: {model.pdfName}")
                 
-                model = ExtractionPayloadModel.fill_model(jsonObject)
-            except json.JSONDecodeError as jd:
-                Logger.error(f"JSON Decode Error: {jd}")
-                exeptionOccurs = True
+        try:
+            if is_null_or_empty(jsonObject['zipCode']):
+                jsonObject['zipCode'] = extract_zip_code(pdf_text)
+        except:
+            pass
+        
+        try:
+            if is_null_or_empty(jsonObject['dob']):
+                jsonObject['dob'] = extract_dob(pdf_text)
+        except:
+            pass
+        
+        try:
+            if is_null_or_empty(jsonObject['time']):
+                jsonObject['time'] = extract_time(pdf_text)
+        except:
+            pass
+        
+        try:
+            if is_null_or_empty(jsonObject['email']):
+                jsonObject['email'] = extract_email(pdf_text)
+        except:
+            pass
+        
+            
+        model = ExtractionPayloadModel.fill_model(jsonObject)
                 
         Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         return json.dumps({'status': 'success', 'message': model.__dict__}), 200

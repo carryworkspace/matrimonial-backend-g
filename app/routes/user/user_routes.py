@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 import json
 import mysql.connector
-from flask import jsonify, request
+from flask import jsonify, request, send_file
 from flask_cors import cross_origin
 from werkzeug.utils import secure_filename
 
@@ -477,6 +477,7 @@ def get_user_details():
         
         username = userDetails[0]["Username"]
         email = userDetails[0]["Email"]
+        phoneNumber: str = str(userDetails[0]["PhoneNumber"])
         
         cursorDb.execute(user_query.GetProfileDetails(userId))
         userDetails = cursorDb.fetchall()
@@ -490,27 +491,36 @@ def get_user_details():
         profile_path = ""
         imageData = {'image': []}
         
-        if is_null_or_empty(requestFileName):
-            Logger.warning("Profile picture not found in db")
-        else:
-            
-            Logger.debug(f"Fetched profile picture filename: {requestFileName}")
-            profile_path = os.path.join(upload_folder, requestFileName)
-            
-            
-            try:
-                with open(profile_path, 'rb') as file:
-                    # Read the file content and convert it into a byte array
-                    file_content = file.read()
-                    byte_array = bytearray(file_content)
-                    byte_array_list = list(byte_array)
-                    imageData["image"] = byte_array_list
-            except FileNotFoundError:
-                Logger.error("Image not found error")
-        
+        # Retriving matrimonial data
         cursorDb.execute(user_query.GetMatrimonialData(profileId))
         matrimonial_details = cursorDb.fetchone()
         Logger.info(f"Matrimonial Details Fetched {matrimonial_details}")
+        
+        
+        gender = matrimonial_details['Gender']
+        if is_null_or_empty(requestFileName):
+            if gender.lower() == "male":
+                requestFileName = Config.DEFAULT_PROFILE_PIC_MALE
+            elif gender.lower() == "female":
+                requestFileName = Config.DEFAULT_PROFILE_PIC_FEMALE
+            else:
+                requestFileName = Config.DEFAULT_PROFILE_PIC
+                
+        Logger.debug(f"Fetched profile picture filename: {requestFileName}")
+        profile_path = os.path.join(upload_folder, requestFileName)
+        
+        
+        try:
+            with open(profile_path, 'rb') as file:
+                # Read the file content and convert it into a byte array
+                file_content = file.read()
+                byte_array = bytearray(file_content)
+                byte_array_list = list(byte_array)
+                imageData["image"] = byte_array_list
+        except FileNotFoundError:
+            Logger.error("Image not found error")
+        
+
         
         subscribe_Token = matrimonial_details['Subscribe_Token']
         name = matrimonial_details['Name']
@@ -525,21 +535,15 @@ def get_user_details():
         email = matrimonial_details['Email']
         education = matrimonial_details['HighestDegree']
         
-        dob_datetime = datetime.datetime.strptime(dob, '%Y-%m-%d')
-        age = calculate_age(dob_datetime)
+        
+        age = calculate_age(dob)
         
         # h 
         
-        
-        try:
-            phoneNumber: str = str(userDetails[0]["PhoneNumber"])
-            Logger.warning(f"Phone Number: {phoneNumber}")
-        except Exception as e:
-            Logger.warning("Value Error Phone Number not Available in user details")
-            Logger.warning(f"Phone Number IN Matrimonial: {matrimonial_details['PhoneNumber']}")
-            
+        if is_null_or_empty(phoneNumber):
+            Logger.warning(f"Phone Number in users data not found: {phoneNumber}")
             phoneNumber: str = str(matrimonial_details['PhoneNumber'])
-            Logger.warning(f"Phone Number: {phoneNumber}")
+            Logger.warning(f"Phone Number IN Matrimonial: {matrimonial_details['PhoneNumber']}")
             
         db.commit()
         Logger.info(f"User details retrieved successfully for UserID: {userId}")
