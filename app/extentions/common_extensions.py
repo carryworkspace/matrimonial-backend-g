@@ -53,6 +53,8 @@ query_payload = payload = {
 
 
 
+
+
 def GetMD5Hash(text: str):
     Logger.debug(f"Starting GetMD5Hash function with input: {text}")
     hash_object = hashlib.md5()
@@ -470,7 +472,8 @@ def sendMessage(number: int, msg: str):
 def split_list(input_list, chunk_size):
     return [input_list[i:i + chunk_size] for i in range(0, len(input_list), chunk_size)]
 
-def calculate_age(birth_date):
+def calculate_age(dob, format = '%Y-%m-%d'):
+    birth_date = datetime.datetime.strptime(dob, '%Y-%m-%d')
     today = datetime.date.today()
     age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
     return age

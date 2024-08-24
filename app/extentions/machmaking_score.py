@@ -178,7 +178,7 @@ class MatchmakingScore:
                 
                 if is_null_or_empty(user_marital_preference):
                     Logger.warning(f"This User is an google drive pdf extracted user don't have preference so skiping match making for this user. with ProfileId: {profileId}")
-                    break
+                    continue
                 
                 if is_null_or_empty(other_marital_status) or is_null_or_empty(user_marital_preference):
                     scores[profileId] = 0
@@ -202,6 +202,12 @@ class MatchmakingScore:
                     score += Config.MM_SCORE_5
                     matchMaritalFound = True
                     Logger.debug(f"MaritalStatus other matrimonial contains user marital status for profile {profileId}, score incremented")
+                
+                elif user_marital_preference == "No Preference":
+                    properties_mached.append("MaritalStatus")
+                    score += Config.MM_SCORE_5
+                    matchMaritalFound = True
+                    Logger.debug(f"MaritalStatus No preference for profile {profileId}, score incremented")
                     
                 if matchMaritalFound == False:
                     scores[profileId] = 0
@@ -281,20 +287,20 @@ class MatchmakingScore:
                 
                 if is_null_or_empty(education) or is_null_or_empty(other_education):
                     Logger.warning(f"User eduction : {education} or Other eduction : {other_education} may be null or empty skiping education matching.")
-                    continue
-                
-                education_char = education.lower()[0]
-                other_education_char = other_education.lower()[0]
-                
-                if education_char == other_education_char:
-                    properties_mached.append(attr)
-                    score += Config.MM_SCORE_5
-                    Logger.debug(f"HighestDegree matched for profile {profileId}, score incremented")
-                elif education == 'No Preference':
-                    properties_mached.append(attr)
-                    score += Config.MM_SCORE_5
-                    Logger.debug(f"No Preference {attr} for profile {profileId}, score incremented")
-                        
+                    
+                else:
+                    education_char = education.lower()[0]
+                    other_education_char = other_education.lower()[0]
+                    
+                    if education_char == other_education_char:
+                        properties_mached.append(attr)
+                        score += Config.MM_SCORE_5
+                        Logger.debug(f"HighestDegree matched for profile {profileId}, score incremented")
+                    elif education == 'No Preference':
+                        properties_mached.append(attr)
+                        score += Config.MM_SCORE_5
+                        Logger.debug(f"No Preference {attr} for profile {profileId}, score incremented")
+                            
             except Exception as e:
                 Logger.error(f"Education : {education} or Other eduction : {other_education}, Error {e}")   
                 
@@ -307,17 +313,17 @@ class MatchmakingScore:
                 
                 if is_null_or_empty(occupation) or is_null_or_empty(preferredProfession):
                     Logger.warning(f"User occupation : {user_hobbies} or Other occupation : {occupation} may be null or empty skiping occupation matching.")
-                    continue
                 
-                properties_mached.append(attr)
-                count = Chatgpt().matching_job_title(preferredProfession, occupation)
-                if count == 0:
-                    if preferredProfession.__contains__(occupation):
-                        count = Config.MM_SCORE_10
-                    elif occupation.__contains__(preferredProfession):
-                        count = Config.MM_SCORE_10
-                    elif preferredProfession == 'No Preference':
-                        count = Config.MM_SCORE_10
+                else:                
+                    properties_mached.append(attr)
+                    count = Chatgpt().matching_job_title(preferredProfession, occupation)
+                    if count == 0:
+                        if preferredProfession.__contains__(occupation):
+                            count = Config.MM_SCORE_10
+                        elif occupation.__contains__(preferredProfession):
+                            count = Config.MM_SCORE_10
+                        elif preferredProfession == 'No Preference':
+                            count = Config.MM_SCORE_10
                     
                 Logger.debug(f"Matching job titles count: {count}")
                 print("count", count)
@@ -335,26 +341,27 @@ class MatchmakingScore:
                 
                 if is_null_or_empty(user_hobbies) or is_null_or_empty(other_hobbies):
                     Logger.info(f"User Hobbies : {user_hobbies} or Other Hobbies may be null or empty : {other_hobbies} skiping hobbies matching.")
-                    continue
                 
-                if other_hobbies.__contains__(user_hobbies):
-                    properties_mached.append(attr)
-                    score += Config.MM_SCORE_10
-                    Logger.debug(f"Hobbies matched for profile {profileId}, score incremented")
-                
-                elif user_hobbies.__contains__(other_hobbies):
-                    properties_mached.append(attr)
-                    score += Config.MM_SCORE_10
-                    Logger.debug(f"Hobbies matched for profile {profileId}, score incremented")
+                else:
+                    if other_hobbies.__contains__(user_hobbies):
+                        properties_mached.append(attr)
+                        score += Config.MM_SCORE_10
+                        Logger.debug(f"Hobbies matched for profile {profileId}, score incremented")
                     
-                elif other_hobbies == user_hobbies:
-                    properties_mached.append(attr)
-                    score += Config.MM_SCORE_10
-                    Logger.debug(f"Hobbies matched for profile {profileId}, score incremented")
-                elif user_hobbies == 'No Preference':
-                    properties_mached.append(attr)
-                    score += Config.MM_SCORE_10
-                    Logger.debug(f"No Preference hobbies for profile {profileId}, score incremented")
+                    elif user_hobbies.__contains__(other_hobbies):
+                        properties_mached.append(attr)
+                        score += Config.MM_SCORE_10
+                        Logger.debug(f"Hobbies matched for profile {profileId}, score incremented")
+                        
+                    elif other_hobbies == user_hobbies:
+                        properties_mached.append(attr)
+                        score += Config.MM_SCORE_10
+                        Logger.debug(f"Hobbies matched for profile {profileId}, score incremented")
+                        
+                    elif user_hobbies == 'No Preference':
+                        properties_mached.append(attr)
+                        score += Config.MM_SCORE_10
+                        Logger.debug(f"No Preference hobbies for profile {profileId}, score incremented")
                         
             except Exception as e:
                 Logger.error(f"Hobbies error: {e}")
@@ -369,17 +376,17 @@ class MatchmakingScore:
                 
                 if is_null_or_empty(desiredColor) or is_null_or_empty(complexion):
                     Logger.warning(f"User complexion : {desiredColor} or Other complexion : {complexion} may be null or empty skiping complexion matching.")
-                    continue
                 
-                if desiredColor == complexion:
-                    properties_mached.append(attr)
-                    score += Config.MM_SCORE_5
-                    Logger.debug(f"Complexion matched for profile {profileId}, score incremented")
-                    
-                elif desiredColor == 'No Preference':
-                    properties_mached.append(attr)
-                    score += Config.MM_SCORE_5
-                    Logger.debug(f"No Preference {attr} for profile {profileId}, score incremented")
+                else:                
+                    if desiredColor == complexion:
+                        properties_mached.append(attr)
+                        score += Config.MM_SCORE_5
+                        Logger.debug(f"Complexion matched for profile {profileId}, score incremented")
+                        
+                    elif desiredColor == 'No Preference':
+                        properties_mached.append(attr)
+                        score += Config.MM_SCORE_5
+                        Logger.debug(f"No Preference {attr} for profile {profileId}, score incremented")
                         
             except Exception as e:
                 Logger.error(f"Hobbies error:{e}")
@@ -388,45 +395,46 @@ class MatchmakingScore:
             try:
                 # if attr == "HeightCM":
                 attr = "HeightCM"
-                    
+                
                 if is_null_or_empty(profile.get(attr)):
                     Logger.warning(f"Height for profile {profileId} is null or empty")
-                    continue
-                
-                other_height: int = int(profile.get(attr).split(".")[0])
-                user_height = user_dict.get('Height')
-                
-                if other_height < 50:
-                    continue
-                
-                if user_height == "Below 5ft":
-                    if other_height < feet_to_cm(5):
-                        properties_mached.append(attr)
-                        score += Config.MM_SCORE_5
-                        Logger.debug(f"Height matched (Below 5ft) for profile {profileId}, score incremented")
 
-                elif user_height == "5.1ft to 5.7ft":
-                    if other_height < feet_to_cm(5.7) and other_height > feet_to_cm(5.1):
-                        properties_mached.append(attr)
-                        score += Config.MM_SCORE_5
-                        Logger.debug(f"Height matched (5.1ft to 5.7ft) for profile {profileId}, score incremented")
+                else:               
+                    
+                    if other_height < 50:
+                        Logger.warning(f"Height for profile {profileId} is less than 50")
+                    else: 
+                        other_height: int = int(profile.get(attr).split(".")[0])
+                        user_height = user_dict.get('Height')
                         
-                elif user_height == "5.8ft to 5.11ft":
-                    Logger.debug(f"Height matched (5.8ft to 5.11ft) for profile {profileId}, score incremented")
-                    if other_height < feet_to_cm(5.11) and other_height > feet_to_cm(5.8):
-                        properties_mached.append(attr)
-                        score += Config.MM_SCORE_5
-                        
-                elif user_height == "Above 6ft":
-                    if other_height > feet_to_cm(6):
-                        properties_mached.append(attr)
-                        score += Config.MM_SCORE_5
-                        Logger.debug(f"Height matched (Above 6ft) for profile {profileId}, score incremented")
-                        
-                elif user_height == 'No Preference':
-                    properties_mached.append(attr)
-                    score += Config.MM_SCORE_5
-                    Logger.debug(f"Height matched No Preference {attr} for profile {profileId}, score incremented")
+                        if user_height == "Below 5ft":
+                            if other_height < feet_to_cm(5):
+                                properties_mached.append(attr)
+                                score += Config.MM_SCORE_5
+                                Logger.debug(f"Height matched (Below 5ft) for profile {profileId}, score incremented")
+
+                        elif user_height == "5.1ft to 5.7ft":
+                            if other_height < feet_to_cm(5.7) and other_height > feet_to_cm(5.1):
+                                properties_mached.append(attr)
+                                score += Config.MM_SCORE_5
+                                Logger.debug(f"Height matched (5.1ft to 5.7ft) for profile {profileId}, score incremented")
+                                
+                        elif user_height == "5.8ft to 5.11ft":
+                            Logger.debug(f"Height matched (5.8ft to 5.11ft) for profile {profileId}, score incremented")
+                            if other_height < feet_to_cm(5.11) and other_height > feet_to_cm(5.8):
+                                properties_mached.append(attr)
+                                score += Config.MM_SCORE_5
+                                
+                        elif user_height == "Above 6ft":
+                            if other_height > feet_to_cm(6):
+                                properties_mached.append(attr)
+                                score += Config.MM_SCORE_5
+                                Logger.debug(f"Height matched (Above 6ft) for profile {profileId}, score incremented")
+                                
+                        elif user_height == 'No Preference':
+                            properties_mached.append(attr)
+                            score += Config.MM_SCORE_5
+                            Logger.debug(f"Height matched No Preference {attr} for profile {profileId}, score incremented")
                 
             except Exception as e:
                 Logger.error(f"Height error: {e}")
@@ -439,63 +447,66 @@ class MatchmakingScore:
                     
                 if is_null_or_empty(profile.get(attr)):
                     Logger.warning(f"Weight for profile {profileId} is null or empty")
-                    continue
-                
-                other_weight = int(profile.get(attr))
-                user_weight = user_dict["Weight"]
-                
-                Logger.info("Fetching user weight and opposite gender weight")
-                    
-                if other_weight < 20:
-                    continue
-                
-                if user_weight == "Less than 50kg":
-                    if other_weight <= 50:
-                        properties_mached.append(attr)
-                        score += Config.MM_SCORE_5
-                        Logger.debug(f"Weight matched (Less than 50kg) for profile {profileId}, score incremented")
 
-                elif user_weight == "51kg to 60kg":
-                    if other_weight <= 60 and other_weight >= 51:
-                        properties_mached.append(attr)
-                        score += Config.MM_SCORE_5
-                        Logger.debug(f"Weight matched (51kg to 60kg) for profile {profileId}, score incremented")
+                else:                
+                    other_weight = int(profile.get(attr))
+                    user_weight = user_dict["Weight"]
                     
-                elif user_weight == "61kg to 65kg":
-                    if other_weight <= 65 and other_weight >= 61:
-                        properties_mached.append(attr)
-                        score += Config.MM_SCORE_5
-                        Logger.debug(f"Weight matched (61kg to 65kg) for profile {profileId}, score incremented")
-                        
-                elif user_weight == "Above 65kg":
-                    if other_weight >= 65:
-                        properties_mached.append(attr)
-                        score += Config.MM_SCORE_5
-                        Logger.debug(f"Weight matched (Above 65kg) for profile {profileId}, score incremented")
-                        
-                elif user_weight == 'No Preference':
-                    properties_mached.append(attr)
-                    score += Config.MM_SCORE_5
-                    Logger.debug(f"Weight matched (No Preference) {attr} for profile {profileId}, score incremented")
+                    if other_weight < 20:
+                        Logger.warning(f"Weight for profile {profileId} is less than 20")
+                    
+                    else:
+                        if user_weight == "Less than 50kg":
+                            if other_weight <= 50:
+                                properties_mached.append(attr)
+                                score += Config.MM_SCORE_5
+                                Logger.debug(f"Weight matched (Less than 50kg) for profile {profileId}, score incremented")
+
+                        elif user_weight == "51kg to 60kg":
+                            if other_weight <= 60 and other_weight >= 51:
+                                properties_mached.append(attr)
+                                score += Config.MM_SCORE_5
+                                Logger.debug(f"Weight matched (51kg to 60kg) for profile {profileId}, score incremented")
+                            
+                        elif user_weight == "61kg to 65kg":
+                            if other_weight <= 65 and other_weight >= 61:
+                                properties_mached.append(attr)
+                                score += Config.MM_SCORE_5
+                                Logger.debug(f"Weight matched (61kg to 65kg) for profile {profileId}, score incremented")
+                                
+                        elif user_weight == "Above 65kg":
+                            if other_weight >= 65:
+                                properties_mached.append(attr)
+                                score += Config.MM_SCORE_5
+                                Logger.debug(f"Weight matched (Above 65kg) for profile {profileId}, score incremented")
+                                
+                        elif user_weight == 'No Preference':
+                            properties_mached.append(attr)
+                            score += Config.MM_SCORE_5
+                            Logger.debug(f"Weight matched (No Preference) {attr} for profile {profileId}, score incremented")
                         
             except Exception as e:
                 Logger.error(f"Weight error: {e}")
                 
             try:
                 # Astro score
+                dob_value = profile.get("Dob")
+                if profile.get("Dob").__contains__("yy"):
+                    Logger.warning(f"DOB for profile {dob_value} is not in correct format skiping astro point for the profileId: {profileId}")
                 
-                # if attr == "Dob":
-                current_time = time.time()
-                if current_time - last_called >= interval or is_astro_method_called == False:
-                    astro_api = AstroService()
-                    last_called = current_time
-                    is_astro_method_called = True
+                else:
+                    current_time = time.time()
+                    if current_time - last_called >= interval or is_astro_method_called == False:
+                        astro_api = AstroService()
+                        last_called = current_time
+                        is_astro_method_called = True
+                        
+                    astro_response = astro_api.get_gunn_score(main_dict=main_profile, user_dict=profile)
+                    print(astro_response.guna_milan.total_points)
+                    score += int(astro_response.guna_milan.total_points)
+                    print(score)
+                    Logger.debug(f"Astrology score added for profile {profileId}, total score: {score}") 
                     
-                astro_response = astro_api.get_gunn_score(main_dict=main_profile, user_dict=profile)
-                print(astro_response.guna_milan.total_points)
-                score += int(astro_response.guna_milan.total_points)
-                print(score)
-                Logger.debug(f"Astrology score added for profile {profileId}, total score: {score}") 
             except Exception as e:
                 
                 tb = traceback.extract_tb(e.__traceback__)
@@ -562,8 +573,8 @@ class MatchmakingScore:
         print("Total items:", len(other_preferences))
         res = MultiProcess()
         
-        # scores = res.process(self.calculate_scores,main_preferences, other_preferences, user_preferences)
-        scores = self.calculate_scores(main_preferences, other_preferences, user_preferences)
+        scores = res.process(self.calculate_scores,main_preferences, other_preferences, user_preferences)
+        # scores = self.calculate_scores(main_preferences, other_preferences, user_preferences)
         print(scores)
         Logger.info(f"Scores calculated for profile_id: {profile_id}")
         Logger.debug(f"Calculated scores: {scores}")
