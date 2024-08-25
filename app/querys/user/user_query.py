@@ -115,13 +115,15 @@ def AddMatchedProfile():
         MatchScore,
         GunnMatchScore,
         IsExpired,
-        MainProfileId
+        MainProfileId,
+        NotificationMsg
     ) VALUES (
         %(profileId)s,
         %(matchScore)s,
         %(gunnMatchScore)s,
         0,
-        %(mainProfileId)s
+        %(mainProfileId)s,
+        %(notificationMsg)s
     );
     """
 

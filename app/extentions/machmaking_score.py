@@ -129,6 +129,8 @@ class MatchmakingScore:
         
         main_profile = main_preferences
         matrimonial_attributes = list(main_profile.keys())
+        
+        final_result_matched_properties = {}
         user_dict = user_preferences
         scores = {}
         gun_scores = {}
@@ -165,6 +167,8 @@ class MatchmakingScore:
             
             score = 0
             properties_mached = []
+            matched_hobbies = []
+            match_and_values = {}
             matchMaritalFound = False
             
             attr = "MaritalStatus"
@@ -216,7 +220,6 @@ class MatchmakingScore:
                         
             try:   
                 # location score 
-                # if attr == "State":
                 attr = "State"
                     
                 if user_dict["PreferredLocation"] == "Anytown":
@@ -240,7 +243,7 @@ class MatchmakingScore:
                 
             try:                
                 # Degree score
-                # if attr == "HighestDegree":
+                attr = "Education"
                     
                 education = user_dict.get("Education")
                 other_education = profile.get("HighestDegree")
@@ -266,7 +269,7 @@ class MatchmakingScore:
                 
             try:
                 # Occupation score
-                # if attr == "Occupation":
+                attr = "Occupation"
                     
                 preferredProfession: str = user_dict["PreferredProfession"]
                 occupation: str = profile.get("Occupation")
@@ -275,8 +278,8 @@ class MatchmakingScore:
                     Logger.warning(f"User occupation : {user_hobbies} or Other occupation : {occupation} may be null or empty skiping occupation matching.")
                 
                 else:                
-                    properties_mached.append(attr)
                     if preferredProfession == 'No Preference':
+                        properties_mached.append(attr)
                         count = Config.MM_SCORE_10
                         Logger.debug(f"No Preference Occupation for profile {profileId}, score incremented")
                             
@@ -284,10 +287,15 @@ class MatchmakingScore:
                         count = Chatgpt().matching_job_title(preferredProfession, occupation)
                         if count == 0:
                             if preferredProfession.__contains__(occupation):
+                                properties_mached.append(attr)
                                 count = Config.MM_SCORE_10
+                                
                             elif occupation.__contains__(preferredProfession):
+                                properties_mached.append(attr)
                                 count = Config.MM_SCORE_10
+                                
                             elif occupation == preferredProfession:
+                                properties_mached.append(attr)
                                 count = Config.MM_SCORE_10
                     
                 Logger.debug(f"Matching job titles count: {count}")
@@ -299,7 +307,7 @@ class MatchmakingScore:
                 
             try:
                 
-                # if attr == "Hobbies":
+                attr = "Hobbies"
                     
                 user_hobbies: str = user_dict["Hobbies"]
                 other_hobbies: str = profile.get("Hobbies")
@@ -310,7 +318,7 @@ class MatchmakingScore:
                 else:
                     first_5_letter_other = other_hobbies[:5]
                     first_5_letter_user = user_hobbies[:5]
-                    matches_found = count_matching_hobbies(other_hobbies, user_hobbies)
+                    matches_found, matched_hobbies = count_matching_hobbies(other_hobbies, user_hobbies)
                     
                     if matches_found == 0:
                         if first_5_letter_other == first_5_letter_user:
@@ -503,9 +511,12 @@ class MatchmakingScore:
                 Logger.error(f"Astro error {tb}")
                         
             scores[profileId] = score
+            match_and_values["Properties"] = properties_mached
+            match_and_values["MatchedHobbies"] = matched_hobbies
+            final_result_matched_properties[profileId] = match_and_values
             # if other_preferences[1] == profile:
             #     break
-        return scores, gun_scores
+        return scores, gun_scores, final_result_matched_properties
     
     
 
@@ -560,8 +571,8 @@ class MatchmakingScore:
         print("Total items:", len(other_preferences))
         res = MultiProcess()
         
-        scores, gun_scores = res.process(self.calculate_scores,main_preferences, other_preferences, user_preferences)
-        # scores, gun_scores = self.calculate_scores(main_preferences, other_preferences, user_preferences)
+        # scores, gun_scores = res.process(self.calculate_scores,main_preferences, other_preferences, user_preferences)
+        scores, gun_scores, match_and_values = self.calculate_scores(main_preferences, other_preferences, user_preferences)
         print(scores)
         Logger.info(f"Scores calculated for profile_id: {profile_id}")
         Logger.debug(f"Calculated scores: {scores}")
@@ -571,5 +582,5 @@ class MatchmakingScore:
         
         Logger.info(f"Sorted scores for profile_id {profile_id} obtained")
         Logger.debug(f"Sorted scores DataFrame: {sorted_scores_df}")
-        return sorted_scores_df.to_dict(orient='records'), gun_scores
+        return sorted_scores_df.to_dict(orient='records'), gun_scores, match_and_values
     

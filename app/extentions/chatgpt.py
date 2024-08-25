@@ -210,9 +210,34 @@ class Chatgpt:
         else:
             Logger.info("Category not Matched")
             return 0
+        
+    
+    def chat_notification_message(self,properties, hobbies):
+        self.tries = 0
+        
+        msg = f"I am giving a notification to a user who got his preferences matched with other user , Preferences matched are {properties} , Hobbies that matched is {hobbies}, please write a notification message in 40 words for the user"
+        Logger.info("Chatgpt Requesting your message..... waiting for response")
+        response = self.client.chat.completions.create(
+        model="gpt-3.5-turbo-16k",
+        messages=[{
+        "role": "user",
+        "content": [
+                {
+                "type": "text",
+                "text": msg
+                }
+            ]
+        }],
+        temperature=1,
+        max_tokens=10000,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0
+        )
+        chatgpt_response = response.choices[0].message.content
+        Logger.debug(f"Response From GPT: {chatgpt_response}")
+        
+        return chatgpt_response
     
     def new_conversation(self):
         self.client = OpenAI(api_key=Config.CHAT_GPT_API_KEY)
-
-
-# print(Chatgpt().matching_job_title("software tester","lawyer"))

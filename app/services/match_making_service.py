@@ -1,4 +1,5 @@
 from app.extentions.machmaking_score import MatchmakingScore
+from app.extentions.common_extensions import is_null_or_empty
 from app.routes import createDbConnection, closeDbConnection
 from app.extentions.logger import Logger
 import json
@@ -7,6 +8,7 @@ from app.querys.user import user_query as querys
 import mysql.connector
 import traceback
 import time
+from app.extentions.chatgpt import Chatgpt
 
 class MatchMakingService:
     def __init__(self) -> None:
@@ -30,7 +32,7 @@ class MatchMakingService:
                 
                 cursorDb.execute(querys.UpdateMatchQueuedFlag(matched_flag=0, profileId=profileId, processing_flag=1))
                 db.commit()
-                sorted_scores_df, gun_scores = _matching.find_all_matches(profileId)
+                sorted_scores_df, gun_scores, result_match_and_values = _matching.find_all_matches(profileId)
                 Logger.debug(f"Sorted scores data frame: {sorted_scores_df}")
                 
                 # # Process the results
@@ -41,14 +43,25 @@ class MatchMakingService:
                 
                 db, cursorDb = createDbConnection() 
                 Logger.debug("Database connection created for inserting match data")
+                _chatgpt = Chatgpt()
                 for match in sorted_scores_df:
                     model = MatchProfileModel.fill_model(match)
+                    model.mainProfileId = profileId
+                    
                     if gun_scores.__contains__(model.profileId):
                         model.gunnMatchScore = gun_scores[model.profileId]
                         Logger.debug(f"Match score updated for ProfileId: {model.profileId} with score: {model.gunnMatchScore}")
                         
-                    model.mainProfileId = profileId
-                    Logger.debug(f"Model data filled for match count: {len(model.__dict__.keys())} with score of : {model.matchScore} and MainProfile: {model.mainProfileId} and Other Profile: {model.profileId}")
+                        matched_properties_str = ", ".join(result_match_and_values[model.profileId]["Properties"])
+                        matched_hobbies_str = ", ".join(result_match_and_values[model.profileId]["MatchedHobbies"])
+                        notification_msg = _chatgpt.chat_notification_message(matched_properties_str, matched_hobbies_str)
+                    
+                        if is_null_or_empty(notification_msg):
+                            Logger.warning(f"Notification message is empty for ProfileId: {model.profileId}")
+                    
+                        model.notificationMsg = notification_msg
+                        
+                        Logger.debug(f"Model data filled for match count: {len(model.__dict__.keys())} with score of : {model.matchScore} and MainProfile: {model.mainProfileId} and Other Profile: {model.profileId}")
                     
                     if model.matchScore == 0:
                         Logger.warning(f"Match score is 0, skipping this match for ProfileId: {model.profileId}")

@@ -15,6 +15,7 @@ class Config:
     UPLOAD_FOLDER = os.path.join(root, 'uploads')
     LOG_FILE_PATH = 'logs/backend.log' 
     GOOGLE_DRIVE_LOG_FILE = 'logs/google_drive.log'
+    MATCH_MAKING_LOG_FILE = 'logs/match_making.log'
 
     DB_HOST = os.getenv('DB_HOST')
     DB_USER = os.getenv('DB_USER')

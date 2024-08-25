@@ -499,6 +499,6 @@ def count_matching_hobbies(field1, field2):
     common_hobbies = hobbies1 & hobbies2
 
     # Return the number of matched hobbies
-    return len(common_hobbies)
+    return len(common_hobbies), list(common_hobbies)
 
 print(detect_environment())
