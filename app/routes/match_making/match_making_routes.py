@@ -223,6 +223,7 @@ def match_making_result():
             try:
                 otherProfileId = match_profile["OtherProfileId"]
                 gunn_score = match_profile["GunnMatchScore"]
+                notificationMsg = match_profile["NotificationMsg"].replace('"', "")
                 cursorDb.execute(querys.GetMatrimonialData(profileId=otherProfileId))
                 profile = cursorDb.fetchone()
                 
@@ -305,6 +306,7 @@ def match_making_result():
                 match_making_result["location"] = location
                 match_making_result["SubscribeToken"] = subscribeToken
                 match_making_result["gunnScore"] = str(gunn_score)
+                match_making_result["notificationMsg"] = notificationMsg
                 
                 # fetch profile picure
                 cursorDb.execute(querys.GetProfilePictureById(otherProfileId))

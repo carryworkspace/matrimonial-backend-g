@@ -73,6 +73,7 @@ def get_project_root():
     return current_dir
 
 def is_null_or_empty(text):
+    text = str(text)
     if text == None:
         Logger.debug(f"Checking if text is null or empty: {text}")
         return True

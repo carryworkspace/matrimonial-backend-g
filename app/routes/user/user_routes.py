@@ -329,6 +329,7 @@ def login_with_user_id():
         userDetails = cursorDb.fetchall()
         print(userDetails)
         if len(userDetails)!= 0:
+            Logger.info(f"User Found for user id {userId}")
             token = encode_auth_token(userId)   
             username = userDetails[0]["Username"]
             cursorDb.execute(user_query.GetProfileDetails(userId))
@@ -336,10 +337,10 @@ def login_with_user_id():
             profileId = profileDetails[0]["Id"]
             db.commit()
             Logger.info(f"User Found for user id {userId}")
-            Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
             return json.dumps({'status': "success", "token": token, "username": username, "userId": userId, "profileId": profileId, "message": "User found successfully", "created": False}), 200
         
         else:
+            Logger.info(f"User not found for user id {userId}")
             return json.dumps({'status': "failed", "message": "User not found"}), 404
             
         
@@ -369,6 +370,7 @@ def login_with_user_id():
     finally:
         closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         Logger.info("Database connection closed")
 
 # uplaod bio data
