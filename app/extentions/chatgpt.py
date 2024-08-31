@@ -9,6 +9,8 @@ from app.utils import contains_any
 import json
 import re
 
+model: str = "gpt-4o-mini"
+old_model: str = "gpt-3.5-turbo-16k"
 
 class Chatgpt:
     def __init__(self):
@@ -21,7 +23,7 @@ class Chatgpt:
         msg = f"please read this text {text} and fill the provided json payload : {payload} and correct the formatting of dob - yyyy-MM-dd and height in cm from fts and time in 24 hours format and fill subcaste withh help of name and please fill gender using name only and please fill the state city country and address and mobile or phone number mandatory and fill all fields of the payload json and if subCaste not provided leave empty and  and return json content only"
         Logger.info("Chatgpt Requesting your message..... waiting for response")
         response = self.client.chat.completions.create(
-        model="gpt-3.5-turbo-16k",
+        model= old_model,
         messages=[{
         "role": "user",
         "content": [
@@ -81,7 +83,7 @@ class Chatgpt:
         msg = f"please read this text {text} and fill the provided json payload : {payload} and correct the formatting of dob - yyyy-MM-dd and height in cm from fts and time in 24 hours format and fill subcaste withh help of name and please fill gender using name only and please fill the state city country and address and mobile or phone number mandatory and fill all fields of the payload json and if subCaste not provided leave empty and  and return json content only"
         Logger.info("Chatgpt Requesting your message..... waiting for response")
         response = self.client.chat.completions.create(
-        model="gpt-3.5-turbo-16k",
+        model= old_model,
         messages=[{
         "role": "user",
         "content": [
@@ -155,7 +157,7 @@ class Chatgpt:
         msg = f"Please categorize the following job title into the most appropriate category from the list provided: {text}. Categories include: {{{', '.join(self.industries)}}}. Just write the category name from the list above. If the job title specifically describes itself as a business, please write 'Business'.  If a job title can be in multiple categories and also belongs to Information Technology, prioritize Information Technology unless it specifically describes itself as a business."
         Logger.info("Requesting categorization of job title... waiting for response")
         response = self.client.chat.completions.create(
-            model="gpt-3.5-turbo-16k",
+            model=model,
             messages=[{
                 "role": "user",
                 "content": [
@@ -212,13 +214,26 @@ class Chatgpt:
             return 0
         
     
-    def chat_notification_message(self,properties, hobbies):
+    def chat_notification_message(self,user_prefernce, other_preference, main_matrimonial_profile, other_matrimonial_profile):
         self.tries = 0
-        
-        msg = f"I am giving a notification to a user who got his preferences matched with other user , Preferences matched are {properties} , Hobbies that matched is {hobbies}, please write a notification message in 40 words for the user"
+        msg = f"""Given the following user preferences and matched profile, explain in 70 words why this match was made. Pick both user names from properties. Focus on key attributes like location, education, hobbies, complexion, and weight. Provide a concise justification for the match score.
+                User Preferences:
+                {user_prefernce}
+                
+                Other Preferences:
+                {other_preference}
+
+                Matched Profile Other Matrimonial Profile:
+                {other_matrimonial_profile}
+                
+                From Profile Main Matrimonial Profile
+                {main_matrimonial_profile}
+                """
+                
+        # msg = f"I am giving a notification to a user who got his preferences matched with other user , Preferences matched are {properties} , Hobbies that matched is {hobbies}, please write a notification message in 40 words for the user"
         Logger.info("Chatgpt Requesting your message..... waiting for response")
         response = self.client.chat.completions.create(
-        model="gpt-3.5-turbo-16k",
+        model=model,
         messages=[{
         "role": "user",
         "content": [

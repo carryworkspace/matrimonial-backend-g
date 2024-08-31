@@ -1,5 +1,5 @@
 from app.extentions.machmaking_score import MatchmakingScore
-from app.routes import createDbConnection, closeDbConnection
+from app.routes import _database, closeDbConnection
 from app.extentions.logger import Logger
 import json
 from app.models.match_profile_model import MatchProfileModel
@@ -15,7 +15,7 @@ class MappingMatchMakingService:
         
         try:
             _matching = MatchmakingScore()
-            db, cursorDb = createDbConnection()
+            db, cursorDb = _database.get_connection()
             
             cursorDb.execute(querys.GetAllMatrimonialData())
             profileIds = cursorDb.fetchall()
@@ -49,7 +49,7 @@ class MappingMatchMakingService:
                     model = MatchProfileModel.fill_model(match)
                     Logger.debug(f"Model data filled for match: {len(model.__dict__.keys())}")
                     model.mainProfileId = profileId
-                    db, cursorDb = createDbConnection() 
+                    db, cursorDb = _database.get_connection() 
                     Logger.debug("Database connection created for inserting match data")
                     
                     cursorDb.execute(querys.AddMatchedProfile(), model.__dict__)

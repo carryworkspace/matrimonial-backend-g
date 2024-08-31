@@ -1,12 +1,13 @@
 class MatchProfileModel:
 
     def __init__(self, profileId: str=None, matchScore=None, gunnMatchScore=None,
-                 mainProfileId: int= None, notificationMsg: str = None):
+                 mainProfileId: int= None, notificationMsg: str = None, hobbies = None):
         self.profileId = profileId
         self.matchScore = matchScore
         self.mainProfileId = mainProfileId
         self.gunnMatchScore = gunnMatchScore
         self.notificationMsg = notificationMsg
+        self.hobbies = hobbies
 
     @classmethod
     def fill_model(cls, data_dict):
@@ -15,7 +16,8 @@ class MatchProfileModel:
             matchScore=data_dict.get('Score'),
             gunnMatchScore = data_dict.get('GunnScore'),
             mainProfileId=data_dict.get('mainProfileId'),
-            notificationMsg = data_dict.get('notificationMsg')
+            notificationMsg = data_dict.get('notificationMsg'),
+            hobbies = data_dict.get('hobbies')
         )
 
     def get_attribute_names(self, exclude=None):

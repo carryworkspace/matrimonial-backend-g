@@ -8,7 +8,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build, Resource
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
-from app.routes import createDbConnection, closeDbConnection
+from app.routes import closeDbConnection, _database
 from app.models.matrimonial_profile_model import MatrimonialProfileModel
 from app.models.bio_data_pdf_model import BioDataPdfModel
 from app.querys.user import user_query as querys
@@ -79,7 +79,7 @@ class GoogleDrive:
   
   
   def profile_exists(self, name:str, phoneNumber:str):
-    db, cursor = createDbConnection()
+    db, cursor = _database.get_connection()
     query = f"SELECT * FROM MatrimonialProfile_M WHERE Name = '{name}' AND PhoneNumber = '{phoneNumber}'"
     cursor.execute(query)
     result = cursor.fetchall()
@@ -90,7 +90,7 @@ class GoogleDrive:
       
   def insert_into_matrimonial(self, dataDict, fileName: str):
     Logger.debug("Starting insert_into_matrimonial method.")
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     Logger.debug("Database connection established.")
     
     phoneNumberStr: str = str(dataDict['phoneNumber'])

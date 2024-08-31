@@ -3,74 +3,105 @@ from mysql import connector
 from config import Config
 import mysql.connector.pooling as pooling
 from app.extentions.logger import Logger
-
+from mysql.connector.cursor import MySQLCursorAbstract
+from app.database.database import Database
 # db = None
 # cursorDb = None
 Router = Blueprint('Router', __name__)
+_database = Database()
 # Router = Blueprint('Router', __name__, url_prefix='/v1')
 # db_pool: connector.connection.MySQLConnection = None
-db_pool = None
 
-def createNormalDbConnection():
-    # global db, cursorDb
 
-    print("********************",Config.DB_HOST, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME    )
-    db = connector.connect(
-        host=Config.DB_HOST,
-        user=Config.DB_USER,
-        password=Config.DB_PASSWORD,
-        database=Config.DB_NAME
-    )
+# def createNormalDbConnection():
+#     # global db, cursorDb
+
+#     print("********************",Config.DB_HOST, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME    )
+#     db = connector.connect(
+#         host=Config.DB_HOST,
+#         user=Config.DB_USER,
+#         password=Config.DB_PASSWORD,
+#         database=Config.DB_NAME
+#     )
     
-    cursorDb = db.cursor(dictionary=True)
-    if db.get_server_info() is not None:
-        print("Database connected")
-    return db, cursorDb
+#     cursorDb = db.cursor(dictionary=True)
+#     if db.get_server_info() is not None:
+#         print("Database connected")
+#     return db, cursorDb
 
-def createDbConnection():
-    global db_pool
+# def createDbConnection():
+#     global db, cursorDb
 
-    if db_pool is None:
-        # Create a connection pool
-        db_pool = pooling.MySQLConnectionPool(
-            pool_name="mypool",
-            pool_size=10,  # Adjust the pool size as needed
-            pool_reset_session=True,
-            host=Config.DB_HOST,
-            user=Config.DB_USER,
-            password=Config.DB_PASSWORD,
-            database=Config.DB_NAME
-        )
-        print("Connection pool created")
-
-    try:
-        db = db_pool.get_connection()
-        cursorDb = db.cursor(dictionary=True)
-    except:
-        Logger.error("Error in connection")
-        Logger.warning("Retrying connection")
+#     if db is None:
+#         db = connector.connect(
+#             host=Config.DB_HOST,
+#             user=Config.DB_USER,
+#             password=Config.DB_PASSWORD,
+#             database=Config.DB_NAME
+#         )
+#         print("Database connected")
+#         try:
+#             db_connect = db.get_server_info()
+#             cursorDb = db.cursor(dictionary=True)
+#         except:
+#             Logger.error("Error in connection")
+#             Logger.warning("Retrying connection")
+#             db = connector.connect(
+#                 host=Config.DB_HOST,
+#                 user=Config.DB_USER,
+#                 password=Config.DB_PASSWORD,
+#                 database=Config.DB_NAME
+#             )
+#             print("Database connected")
         
-        db_pool = pooling.MySQLConnectionPool(
-            pool_name="mypool",
-            pool_size=10,  # Adjust the pool size as needed
-            pool_reset_session=True,
-            host=Config.DB_HOST,
-            user=Config.DB_USER,
-            password=Config.DB_PASSWORD,
-            database=Config.DB_NAME
-        )
-        db = db_pool.get_connection()
-        cursorDb = db.cursor(dictionary=True)
-        print("Connection pool created")
+            
+
+#     return db, cursorDb
+
+# def createDbConnectionPool():
+#     global db_pool
+
+#     if db_pool is None:
+#         # Create a connection pool
+#         db_pool = pooling.MySQLConnectionPool(
+#             pool_name="mypool",
+#             pool_size=10,  # Adjust the pool size as needed
+#             pool_reset_session=True,
+#             host=Config.DB_HOST,
+#             user=Config.DB_USER,
+#             password=Config.DB_PASSWORD,
+#             database=Config.DB_NAME
+#         )
+#         print("Connection pool created")
+
+#     try:
+#         db = db_pool.get_connection()
+#         cursorDb = db.cursor(dictionary=True)
+#     except:
+#         Logger.error("Error in connection")
+#         Logger.warning("Retrying connection")
         
-    # Get a connection from the pool
+#         db_pool = pooling.MySQLConnectionPool(
+#             pool_name="mypool",
+#             pool_size=10,  # Adjust the pool size as needed
+#             pool_reset_session=True,
+#             host=Config.DB_HOST,
+#             user=Config.DB_USER,
+#             password=Config.DB_PASSWORD,
+#             database=Config.DB_NAME
+#         )
+#         db = db_pool.get_connection()
+#         cursorDb = db.cursor(dictionary=True)
+#         print("Connection pool created")
+        
+#     # Get a connection from the pool
     
-    # Create a cursor
+#     # Create a cursor
 
-    if db.is_connected():
-        print("Database connected from pool")
+#     if db.is_connected():
+#         print("Database connected from pool")
 
-    return db, cursorDb
+#     return db, cursorDb
 
 def closeDbConnection(db, cursorDb):
     # db.close()
@@ -81,8 +112,6 @@ def closePoolConnection(db):
     db.close()
     print("Database Disconnected from pool")
 
-
-# from . import hotel  
 
 from .user import user_routes
 from .profile import profile_routes

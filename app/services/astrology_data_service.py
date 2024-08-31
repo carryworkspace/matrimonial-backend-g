@@ -1,7 +1,7 @@
 import requests
 import json
 from geopy.geocoders import Photon
-from app.routes import createDbConnection, closeDbConnection
+from app.routes import closeDbConnection, _database
 from app.extentions.common_extensions import is_null_or_empty
 from app.models.astrological_model import AstrologicalDataModel
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
@@ -17,7 +17,7 @@ class AstroService:
         Logger.debug(f"Base URL set to: {self.base_url}", )
         self.access_token = self.get_token()
         Logger.debug(f"Access token retrieved: {self.access_token}" )
-        self.conn, self.cursor = createDbConnection()
+        self.conn, self.cursor = _database.get_connection()
         Logger.debug("Database connection established.")
 
     def get_token(self):

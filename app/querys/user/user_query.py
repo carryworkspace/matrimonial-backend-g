@@ -43,6 +43,10 @@ def GetProfileDetailsById(profileId: int):
     Logger.debug(f"Generating SQL query to get profile details by profileId {profileId}")
     return f"select * from Profiles_M where Id = {profileId}"
 
+def GetAllProfiles():
+    Logger.debug(f"Generating SQL query to get all profiles")
+    return f"select * from Profiles_M"
+
 def GetProfilePicture(userId: int):
     Logger.debug(f"Generating SQL query to get profile picture with userId {userId}")
     return f"select * from Profiles_M where UserId = {userId}"
@@ -58,6 +62,10 @@ def GetMatchMakingCompleteNotification(profileId: int):
 def GetUserDetails(userId: int):
     Logger.debug(f"Generating SQL query to get user details with userId {userId}")
     return f"select Id, Username, PhoneNumber, IsActive, Email from Users_M where Id = {userId}"
+
+def GetAllUserDetails():
+    Logger.debug(f"Generating SQL query to get all user details")
+    return f"select Id, Username, PhoneNumber, IsActive, Email from Users_M where IsActive = 1"
 
 def GetMatrimonialData(profileId: int):
     Logger.debug(f"Generating SQL query to get matrimonial data with profileId= {profileId}")
@@ -83,6 +91,10 @@ def GetAllMatrimonialData():
 def GetMatchedProfiles(mainProfileId: int):
     Logger.debug(f"Generating SQL query to get matrimonial data ")
     return f"select * from MatchedProfiles_M where MainProfileId= {mainProfileId} and IsExpired = 0 and Viewed = 0 order by MatchScore desc Limit 10"
+
+def GetAllMatchedProfiles():
+    Logger.debug(f"Generating SQL query to get matrimonial data")
+    return f"select distinct MainProfileId from MatchedProfiles_M where IsExpired = 0"
 
 def GetBioDataPdfByProfileId(profileId: int):
     Logger.debug(f"Generating SQL query to get bio data pdf for profile Id {profileId}")
@@ -116,14 +128,16 @@ def AddMatchedProfile():
         GunnMatchScore,
         IsExpired,
         MainProfileId,
-        NotificationMsg
+        NotificationMsg,
+        Hobbies
     ) VALUES (
         %(profileId)s,
         %(matchScore)s,
         %(gunnMatchScore)s,
         0,
         %(mainProfileId)s,
-        %(notificationMsg)s
+        %(notificationMsg)s,
+        %(hobbies)s
     );
     """
 

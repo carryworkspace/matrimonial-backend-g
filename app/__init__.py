@@ -4,6 +4,7 @@ from flask_cors import CORS
 from mysql import connector
 from config import Config
 from .extentions.logger import Logger
+# from flask_socketio import SocketIO, emit, send
 
 Logger.setup_logger()
 app = Flask(__name__)

@@ -1,7 +1,7 @@
 from app.models.matrimonial_profile_model import MatrimonialProfileModel
 from app.querys.user import user_query
 from collections import Counter
-from app.routes import createDbConnection, closeDbConnection
+from app.routes import closeDbConnection, _database
 
 class CleanUpService:
     
@@ -11,7 +11,7 @@ class CleanUpService:
   #       result = cursor.fetchall()
   #       return len(result) > 0
   def get_all_data(self):
-    db, cursor = createDbConnection()
+    db, cursor = _database.get_connection()
     query = user_query.GetMatrimonialData()
     cursor.execute(query)
     data = cursor.fetchall()

@@ -17,7 +17,7 @@ from ...extentions.pdf_extractor import PdfExtracter
 from ...extentions.common_extensions import users_otp
 from ...models.bio_data_pdf_model import BioDataPdfModel
 from ...models.match_profile_model import MatchProfileModel
-from .. import createDbConnection, Router,closeDbConnection, closePoolConnection
+from .. import Router,closeDbConnection, closePoolConnection, _database
 from ...models.gallery_images_model import GalleryImagesModel
 from ...models.profile_interest_model import ProfileInterestModel
 from flask import jsonify, request, abort, send_file, make_response
@@ -32,7 +32,7 @@ import traceback
 @cross_origin(supports_credentials=True)
 def add_profile():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     Logger.debug("Database connection established.")
     data = request.get_json()
     
@@ -84,7 +84,7 @@ def add_profile():
 @cross_origin(supports_credentials=True)
 def upload_profile_picture():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     Logger.debug("Database connection established.")
     upload_folder = Config.PROFILE_PIC_PATH
     Logger.debug(f"Upload folder path: {upload_folder}")
@@ -177,7 +177,7 @@ def upload_profile_picture():
 @cross_origin(supports_credentials=True)
 def get_profile_picture():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     Logger.debug("Database connection established.")
     upload_folder = Config.PROFILE_PIC_PATH
     Logger.debug(f"Upload folder path: {upload_folder}")
@@ -269,7 +269,7 @@ def get_profile_picture():
 @cross_origin(supports_credentials=True)
 def add_profile_interest():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     data = request.get_json()
     Logger.debug(f"Received JSON data: {data}")
     try:
@@ -308,7 +308,7 @@ def add_profile_interest():
 @cross_origin(supports_credentials=True)
 def add_matrimonial_profile():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     data = request.get_json()
     Logger.info("Received data")
     
@@ -373,7 +373,7 @@ def add_matrimonial_profile():
 @cross_origin(supports_credentials=True)
 def add_match_profile():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     data = request.get_json()
     Logger.debug(f"Received JSON data: {data}")
     
@@ -417,7 +417,7 @@ def add_match_profile():
 @cross_origin(supports_credentials=True)
 def add_gallery_images():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     data = request.get_json()
     Logger.debug(f"Received JSON data: {data}")
     
@@ -462,7 +462,7 @@ def add_gallery_images():
 @cross_origin(supports_credentials=True)
 def add_bio_data_pdf():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     data = request.get_json()
     upload_folder = Config.BIO_DATA_PDF_PATH
     Logger.info(f"Requesting json : {request.get_json()}")

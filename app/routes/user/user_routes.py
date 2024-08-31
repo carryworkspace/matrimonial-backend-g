@@ -8,7 +8,7 @@ from flask_cors import cross_origin
 from werkzeug.utils import secure_filename
 
 # Assuming these are in a package one level up
-from app.routes import createDbConnection, Router, closeDbConnection, closePoolConnection
+from app.routes import Router, closeDbConnection, closePoolConnection, _database
 from app.querys.user import user_query
 from app.extentions.common_extensions import *
 from app.extentions.otp_extentions import *
@@ -63,7 +63,7 @@ def verify_otp():
         _type_: _json_string_
     """
     
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     Logger.debug("Database connection established.")
     data = request.get_json()
     Logger.debug(f"Received JSON data: {data}")
@@ -149,9 +149,9 @@ def verify_otp():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     
     finally:
-        closeDbConnection(db, cursorDb)
+        # closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
-        Logger.debug("Database connection closed.")
+        # Logger.debug("Database connection closed.")
         Logger.info("verify_otp function execution completed.")
 
 
@@ -196,7 +196,7 @@ def request_otp():
 @cross_origin(supports_credentials=True)
 def google_auth():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     data = request.get_json()
     Logger.debug(f"Received JSON data: {data}")
     try:
@@ -284,7 +284,7 @@ def google_auth():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     
     finally:
-        closeDbConnection(db, cursorDb)
+        # closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
         Logger.info("Database connection closed")
         
@@ -293,7 +293,7 @@ def google_auth():
 @cross_origin(supports_credentials=True)
 def login_with_user_id():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     data = request.get_json()
     Logger.debug(f"Received JSON data: {data}")
     try:
@@ -325,6 +325,15 @@ def login_with_user_id():
         return json.dumps({"status": "failed", 'message': "password cannot be null or empty"}), 400
     
     try:
+        
+        cursorDb.execute(user_query.CheckProfileExists(userId))
+        userDetails = cursorDb.fetchall()
+        
+        if len(userDetails)==0:
+            Logger.info(f"User not found for user id {userId}")
+            return json.dumps({'status': "failed", "message": "User not found"}), 400
+        
+        
         cursorDb.execute(user_query.GetUserLoginDetailsByIdAndPassword(userId, password))
         userDetails = cursorDb.fetchall()
         print(userDetails)
@@ -341,8 +350,7 @@ def login_with_user_id():
         
         else:
             Logger.info(f"User not found for user id {userId}")
-            return json.dumps({'status': "failed", "message": "User not found"}), 404
-            
+            return json.dumps({'status': "failed", "message": "Invalid user id or password"}), 400
         
     except mysql.connector.Error as e: 
             Logger.error(f"MySQL Error: {e}")
@@ -368,10 +376,10 @@ def login_with_user_id():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     
     finally:
-        closeDbConnection(db, cursorDb)
+        # closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
         Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
-        Logger.info("Database connection closed")
+        # Logger.info("Database connection closed")
 
 # uplaod bio data
 @Router.route('/upload-biodata', methods=['POST'])
@@ -382,7 +390,7 @@ def bio_data():
     upload_folder = Config.BIO_DATA_PDF_PATH
     Logger.debug(f"Project root: {root}")
     Logger.debug(f"Upload folder: {upload_folder}")
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     Logger.debug("Database connection established.")
     profileId :int = 0
     try:
@@ -444,7 +452,7 @@ def photo_gallery():
         Logger.info(f"Created upload folder: {Upload_Folder}")
 
     userId = 0
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
 
     # if userId == 0:
     #     return 'User not specified', 400
@@ -470,7 +478,7 @@ def photo_gallery():
 @cross_origin(supports_credentials=True)
 def get_user_details():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     Logger.debug("Database connection")
     upload_folder = Config.PROFILE_PIC_PATH
     try:
@@ -589,7 +597,7 @@ def get_user_details():
         db.rollback()
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
-        closeDbConnection(db, cursorDb)
+        # closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
         Logger.info("Database connection closed")
 
@@ -598,7 +606,7 @@ def get_user_details():
 @cross_origin(supports_credentials=True)
 def update_matrimonial_profile():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     data = request.get_json()
     Logger.info("Received data")
     try:
@@ -659,7 +667,7 @@ def update_matrimonial_profile():
     finally:
         Logger.info("Closing database connection.")
         # closePoolConnection(db)
-        closeDbConnection(db, cursorDb)
+        # closeDbConnection(db, cursorDb)
 
 
 
@@ -677,8 +685,8 @@ def chatgpt_api():
 def authorization_check():
 #    authrization =  check_request_authorized(request)
 #    if authrization == "":
-    drive = GoogleDrive().extract_and_add_to_DB_MAIN()
+    # drive = GoogleDrive().extract_and_add_to_DB_MAIN()
     time.sleep(1)
-    return drive
+    return "Oke"
 #    else:
         # return authrization

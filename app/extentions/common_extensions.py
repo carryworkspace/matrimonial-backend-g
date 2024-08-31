@@ -83,6 +83,15 @@ def is_null_or_empty(text):
     if text == " ":
         Logger.debug("Text is not null or empty")
         return True
+    if text == "None":
+        Logger.debug("Text is not null or empty")
+        return True
+    if text == "null":
+        Logger.debug("Text is not null or empty")
+        return True
+    if text == "Null":
+        Logger.debug("Text is not null or empty")
+        return True
     return False
 
 def is_number_zero(text):
@@ -502,4 +511,23 @@ def count_matching_hobbies(field1, field2):
     # Return the number of matched hobbies
     return len(common_hobbies), list(common_hobbies)
 
+def remove_duplicates(input_string):
+    # Split the string into a list of words
+    words = input_string.split(",")
+    
+    # Initialize a set to keep track of seen words and a list for result
+    seen = set()
+    result = []
+    
+    # Iterate through the words
+    for word in words:
+        word: str = word.strip()
+        if word not in seen:
+            seen.add(word)   # Add the word to the seen set
+            result.append(word)  # Append the word to the result list
+    
+    # Join the words back into a single string
+    return ", ".join(result)
+
+# Example usage
 print(detect_environment())

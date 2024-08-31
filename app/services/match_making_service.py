@@ -1,6 +1,6 @@
 from app.extentions.machmaking_score import MatchmakingScore
 from app.extentions.common_extensions import is_null_or_empty
-from app.routes import createDbConnection, closeDbConnection
+from app.routes import closeDbConnection, _database
 from app.extentions.logger import Logger
 import json
 from app.models.match_profile_model import MatchProfileModel
@@ -9,6 +9,12 @@ import mysql.connector
 import traceback
 import time
 from app.extentions.chatgpt import Chatgpt
+from app.database.database import Database
+from mysql.connector.cursor import MySQLCursorAbstract
+from mysql.connector.connection import MySQLConnectionAbstract
+
+db: MySQLConnectionAbstract = None
+cursorDb: MySQLCursorAbstract = None
 
 class MatchMakingService:
     def __init__(self) -> None:
@@ -16,10 +22,10 @@ class MatchMakingService:
     
     
     def start_match_making(self):
-        
+        global db, cursorDb
         try:
             _matching = MatchmakingScore()
-            db, cursorDb = createDbConnection()
+            db, cursorDb = _database.get_connection()
             Logger.info(f"*************** Starting Matchmaking Service ****************")
             
             cursorDb.execute(querys.GetAllQueuedMatchMaking())
@@ -41,41 +47,67 @@ class MatchMakingService:
                     # return json.dumps({"status": "success", "message": "Match making has been already completed for this Profile or does not have opposite gender data.",}), 200
                     continue
                 
-                db, cursorDb = createDbConnection() 
                 Logger.debug("Database connection created for inserting match data")
                 _chatgpt = Chatgpt()
                 for match in sorted_scores_df:
                     model = MatchProfileModel.fill_model(match)
                     model.mainProfileId = profileId
                     
-                    if gun_scores.__contains__(model.profileId):
-                        model.gunnMatchScore = gun_scores[model.profileId]
-                        Logger.debug(f"Match score updated for ProfileId: {model.profileId} with score: {model.gunnMatchScore}")
+                    try:
                         
-                        matched_properties_str = ", ".join(result_match_and_values[model.profileId]["Properties"])
-                        matched_hobbies_str = ", ".join(result_match_and_values[model.profileId]["MatchedHobbies"])
-                        notification_msg = _chatgpt.chat_notification_message(matched_properties_str, matched_hobbies_str)
                     
-                        if is_null_or_empty(notification_msg):
-                            Logger.warning(f"Notification message is empty for ProfileId: {model.profileId}")
-                    
-                        model.notificationMsg = notification_msg
+                        if gun_scores.__contains__(model.profileId):
+                            model.gunnMatchScore = gun_scores[model.profileId]
+                            Logger.debug(f"Match score updated for ProfileId: {model.profileId} with score: {model.gunnMatchScore}")
+                            
+                            matched_properties_str = ", ".join(result_match_and_values[model.profileId]["PropertiesMatched"])
+                            Logger.info(f"Matched Properties: {matched_properties_str}")
+                            
+                            user_preference_profile = result_match_and_values[model.profileId]["UserPreference"]
+                            Logger.info(f"User Preference Profile: {user_preference_profile}")
+                            
+                            other_preference_profile = result_match_and_values[model.profileId]["OtherPreference"]
+                            Logger.info(f"User Preference Profile: {user_preference_profile}")
+                            
+                            other_matrimonial_profile = result_match_and_values[model.profileId]["OtherMatrimonial"]
+                            Logger.info(f"Other Matrimonial Profile: {other_matrimonial_profile}")
+                            
+                            user_matrimonial_profile = result_match_and_values[model.profileId]["UserMatrimonial"]
+                            
+                            notification_msg = _chatgpt.chat_notification_message(user_prefernce= user_preference_profile, other_preference= other_preference_profile, main_matrimonial_profile= user_matrimonial_profile, other_matrimonial_profile=other_matrimonial_profile)
+                            Logger.debug(f"Notification Message: {notification_msg}")
                         
-                        Logger.debug(f"Model data filled for match count: {len(model.__dict__.keys())} with score of : {model.matchScore} and MainProfile: {model.mainProfileId} and Other Profile: {model.profileId}")
-                    
-                    if model.matchScore == 0:
-                        Logger.warning(f"Match score is 0, skipping this match for ProfileId: {model.profileId}")
-                        continue
-                    cursorDb.execute(querys.AddMatchedProfile(), model.__dict__)
-                    db.commit()
-                    Logger.debug("Executed query to add matched profile")
-                    
-                cursorDb.execute(querys.UpdateMatchFlag(1, profileId))
-                cursorDb.execute(querys.UpdateMatchQueuedFlag(1, profileId))
-                Logger.debug("Executed query to update match flag")
+                            if is_null_or_empty(notification_msg):
+                                Logger.warning(f"Notification message is empty for ProfileId: {model.profileId}")
+                        
+                            model.notificationMsg = notification_msg
+                            model.hobbies = user_preference_profile["Hobbies"]
+                            
+                            Logger.debug(f"Model data filled for match count: {len(model.__dict__.keys())} with score of : {model.matchScore} and MainProfile: {model.mainProfileId} and Other Profile: {model.profileId}")
+                        
+                        if model.matchScore == 0:
+                            Logger.warning(f"Match score is 0, skipping this match for ProfileId: {model.profileId}")
+                            continue
+                        cursorDb.execute(querys.AddMatchedProfile(), model.__dict__)
+                        db.commit()
+                        Logger.debug("Executed query to add matched profile")
+                        
+                        cursorDb.execute(querys.UpdateMatchFlag(1, profileId))
+                        cursorDb.execute(querys.UpdateMatchQueuedFlag(1, profileId))
+                        Logger.debug("Executed query to update match flag")
+                        
+                        db.commit()
+                        Logger.info("Match data inserted successfully")
                 
-                db.commit()
-                Logger.info("Match data inserted successfully")
+                    except Exception as e:
+                        Logger.error(f"Unexpected Error: for {match} ERROR: {e}")
+                        tb = traceback.extract_tb(e.__traceback__)
+                        traceback.print_exc()
+                        Logger.error(f"Unexpected Error trackback: {tb}")
+                        print(tb)
+                        db.rollback()
+                        
+                
         except mysql.connector.Error as e:
             Logger.error(f"JSON Decode Error: {e}")
             return json.dumps({"status": "failed", 'message': "some error occurs, in query execution"}), 400

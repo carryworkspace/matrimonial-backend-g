@@ -3,7 +3,7 @@ from flask import request, jsonify
 from app.extentions.common_extensions import *
 from app.extentions.otp_extentions import *
 from app.extentions.machmaking_score import MatchmakingScore
-from app.routes import createDbConnection, Router, closeDbConnection, closePoolConnection, createNormalDbConnection
+from app.routes import Router, closeDbConnection, closePoolConnection, _database
 from flask_cors import cross_origin
 import mysql.connector
 from app.models.match_profile_model import MatchProfileModel
@@ -21,7 +21,7 @@ from app.querys.data import data_querys
 @cross_origin(supports_credentials=True)
 def get_gotras():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     # data = request.get_json()  # Get JSON data from request body
     # _matching = MatchmakingScore()
     Logger.debug("Database connection obtained from _matching")
@@ -69,7 +69,7 @@ def get_gotras():
 @cross_origin(supports_credentials=True)
 def get_subcaste():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
-    db, cursorDb = createDbConnection()
+    db, cursorDb = _database.get_connection()
     # data = request.get_json()  # Get JSON data from request body
     # _matching = MatchmakingScore()
     Logger.debug("Database connection obtained from _matching")
@@ -117,7 +117,7 @@ def get_subcaste():
 @cross_origin(supports_credentials=True)
 def get_general_data():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
-    db, cursorDb = createNormalDbConnection()
+    db, cursorDb = _database.get_connection()
     result_data_dict = {}
     # data = request.get_json()  # Get JSON data from request body
     # _matching = MatchmakingScore()
