@@ -255,6 +255,10 @@ def UpdateBioDataPdfFile():
     Logger.debug("Generated SQL query for updating bio data PDF file")
     return f"update BioDataPdfFiles_M set PdfName = %(pdfName)s where ProfileId = %(profileId)s "
 
+def UpdateBioDataPdfPublicFileName(profileId: int, publicPdfName: str):
+    Logger.debug("Generated SQL query for updating bio data PDF file")
+    return f"update BioDataPdfFiles_M set PublicPdfName = '{publicPdfName}' where ProfileId = {profileId}"
+
 def UpdateViewedStatusMatchedProfile(id: int):
     Logger.debug("Generated SQL query for updating match making viewed")
     return f"update MatchedProfiles_M set Viewed = 1 where Id = {id}"

@@ -4,11 +4,14 @@ from config import Config
 import mysql.connector.pooling as pooling
 from app.extentions.logger import Logger
 from mysql.connector.cursor import MySQLCursorAbstract
-from app.database.database import Database
+from app.database.database import Database as _database
+from app.database.db_pooling import MySQLConnector
 # db = None
 # cursorDb = None
 Router = Blueprint('Router', __name__)
-_database = Database()
+
+db = MySQLConnector()
+# _database = Database()
 # Router = Blueprint('Router', __name__, url_prefix='/v1')
 # db_pool: connector.connection.MySQLConnection = None
 
@@ -104,7 +107,7 @@ _database = Database()
 #     return db, cursorDb
 
 def closeDbConnection(db, cursorDb):
-    # db.close()
+    db.close()
     cursorDb.close()
     print("Database Disconnected")
 

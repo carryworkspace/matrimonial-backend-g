@@ -1,4 +1,5 @@
 import os
+import socket
 
 def get_project_root():
     current_dir = os.path.abspath(os.getcwd())
@@ -9,16 +10,26 @@ def get_project_root():
             raise Exception("Marker file not found in project hierarchy")
     return current_dir
 
+def detect_environment():
+    # Get the remote IP address of the client making the request
+    ip_addresses = socket.gethostbyname_ex(socket.gethostname())[2]
+    for ip in ip_addresses:
+        if ip.startswith('192.168.') or ip.startswith('10.') or ip.startswith('172.'):
+            return 'local'
+    return "server"
+
 
 class Config:
     root = get_project_root()
+    environment = detect_environment()
     UPLOAD_FOLDER = os.path.join(root, 'uploads')
     LOG_FILE_PATH = 'logs/backend.log' 
     GOOGLE_DRIVE_LOG_FILE = 'logs/google_drive.log'
     MATCH_MAKING_LOG_FILE = 'logs/match_making.log'
 
     DB_HOST = os.getenv('DB_HOST')
-    DB_USER = os.getenv('DB_USER')
+    # DB_USER = os.getenv('DB_USER')
+    DB_USER = "maheshwari_matrimonialUser"
     DB_PASSWORD = os.getenv('DB_PASSWORD')
     DB_NAME = os.getenv('DB_NAME')
     
@@ -38,6 +49,9 @@ class Config:
     PHOTO_GALLERY_PATH = os.path.join(UPLOAD_FOLDER, 'gallery')
     PROFILE_PIC_PATH = os.path.join(UPLOAD_FOLDER, 'profiles')
     BIO_DATA_PDF_PATH = os.path.join(UPLOAD_FOLDER, 'bio_data_pdfs')
+    BIO_DATA_PUBLIC_FOLDER = os.path.join(UPLOAD_FOLDER, 'bio_data_public')
+    BIO_DATA_PUBLIC_FOLDER_SERVER = "/home/maheshwari/www/pdfs"
+    SERVER_PDF_HOST = 'https://smartmaheshwari.com/pdfs/'
     DEFAULT_PROFILE_PIC = 'default.png'
     DEFAULT_PROFILE_PIC_FEMALE = 'female.jpg'
     DEFAULT_PROFILE_PIC_MALE = 'male.jpg'

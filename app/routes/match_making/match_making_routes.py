@@ -15,7 +15,7 @@ from app.services.match_making_service import MatchMakingService
 from app.services.mapping_match_making_service import MappingMatchMakingService
 from datetime import datetime
 import traceback
-import math
+import shutil
 
 @Router.route('/matchmaking', methods=['GET'])
 @cross_origin(supports_credentials=True)
@@ -77,7 +77,7 @@ def perform_matchmaking():
         db.rollback()
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
-        # closeDbConnection(db, cursorDb)
+        closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
         Logger.info("Closing database connection")
 
@@ -127,7 +127,7 @@ def match_making_status():
         db.rollback()
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
-        # closeDbConnection(db, cursorDb)
+        closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
         Logger.info("Closing database connection")
 
@@ -336,7 +336,7 @@ def match_making_result():
         db.rollback()
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
-        # closeDbConnection(db, cursorDb)
+        closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
         # Logger.info("Closing database connection")
         pass
@@ -394,7 +394,7 @@ def update_match_making_profile_viewed():
         db.rollback()
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
-        # closeDbConnection(db, cursorDb)
+        closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
         Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         # Logger.info("Closing database connection")
@@ -475,10 +475,99 @@ def download_pdf():
         db.rollback()
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
-        # closeDbConnection(db, cursorDb)
+        closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
         # Logger.info("Closing database connection")
         pass
+
+
+@Router.route('/generate-bio-data-link', methods=['GET'])
+@cross_origin(supports_credentials=True)
+def generate_bio_data_link():
+    Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
+    # doing someting else will continue after some time
+    db, cursorDb = _database.get_connection()
+    upload_folder = Config.BIO_DATA_PDF_PATH
+    public_folder = Config.BIO_DATA_PUBLIC_FOLDER_SERVER if detect_environment() == "server" else Config.BIO_DATA_PUBLIC_FOLDER
+    pdf_host = Config.SERVER_PDF_HOST
+    link = None
+    public_pdf_name = None
+    
+    if os.path.exists(public_folder) == False:
+        os.makedirs(public_folder)
+        
+    random_name = str(generate_random_number(12)) + '.pdf'
+    try:
+        Logger.info("Starting generate_bio_data_link function")
+        profileId :int = 0
+        try:
+            profileId = int(request.args["profileId"])
+        except Exception as e:
+            Logger.error(f"Error occurred while parsing profileId: {e}")
+            profileId = 0
+        
+        if profileId == 0:
+            Logger.warning("Profile ID not provided or invalid")
+            return jsonify({"status": "failed", "message": "Profile ID not provided"}), 400
+        
+        cursorDb.execute(querys.GetBioDataPdfByProfileId(profileId))
+        bio_data_pdf = cursorDb.fetchall()
+        
+        if len(bio_data_pdf) == 0:
+            Logger.info(f"Did not get any pdf bio file for the profile id: {profileId} in database.")
+            return json.dumps({'status': 'failed', 'message': 'pdf not found in db for the profile_id', 'pdf_link': None}), 404
+                    
+        else:
+            public_pdf_name = bio_data_pdf[0]["PublicPdfName"]
+            Logger.debug(f"Fetched public pdf name: {public_pdf_name}")
+            if is_null_or_empty(public_pdf_name):
+                Logger.warning(f"Public pdf name : {public_pdf_name}")
+                Logger.warning(f"Processing link to generate")
+            
+                requestFileName = bio_data_pdf[0]["PdfName"]
+                Logger.debug(f"Fetched profile picture filename: {requestFileName}")
+                pdf_path = os.path.join(upload_folder, requestFileName)
+                
+                if not os.path.exists(pdf_path):
+                    Logger.warning(f"Pdf not found on server for the profile id: {profileId}")
+                    return json.dumps({'status': 'failed', 'message': 'pdf not found on server for the profile_id', 'pdf_link': None}), 404
+                    
+                dest_file = os.path.join(public_folder, random_name)
+                try:
+                    shutil.copy(pdf_path, dest_file)
+                    Logger.info(f'Copied and renamed {random_name} to {dest_file}')
+                except Exception as e:
+                    Logger.info(f'Failed to copy and rename {random_name}: {e}')
+                
+                cursorDb.execute(querys.UpdateBioDataPdfPublicFileName(profileId, random_name))
+                db.commit()
+                link = pdf_host + random_name
+            else:
+                link = pdf_host + public_pdf_name                
+                
+        return json.dumps({'status': 'success', 'message': 'pdf found', 'pdf_link': link}), 200
+    except mysql.connector.Error as e:
+        Logger.error(f"MySQL Database Error: {e}")
+        return json.dumps({"status": "failed", 'message': "some error occurs, in query execution"}), 400
+    except json.JSONDecodeError as jd:
+        Logger.error(f"JSON Decode Error: {jd}")
+        db.rollback()
+        return json.dumps({"status": "failed", 'message': "Invalid data format of json"}), 400
+    
+    except ValueError as ve:
+        Logger.error(f"Value Error: {ve}")
+        db.rollback()
+        return json.dumps({"status": "failed", 'message': "Invalid data format"}), 400
+
+    except Exception as e:
+        Logger.error(f"Unexpected Error: {e}")
+        db.rollback()
+        return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
+    finally:
+        closeDbConnection(db, cursorDb)
+        # closePoolConnection(db)
+        # Logger.info("Closing database connection")
+        Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         
 
 @Router.route('/whatsapp-notification-status', methods=['GET'])
@@ -568,7 +657,7 @@ def whatsapp_notification_result():
         db.rollback()
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
-        # closeDbConnection(db, cursorDb)
+        closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
         # Logger.info("Closing database connection")
         pass

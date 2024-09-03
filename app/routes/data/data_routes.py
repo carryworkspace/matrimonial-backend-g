@@ -108,7 +108,7 @@ def get_subcaste():
         db.rollback()
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
-        # closeDbConnection(db, cursorDb)
+        closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
         Logger.info("Closing database connection")
         
@@ -182,7 +182,7 @@ def get_general_data():
         db.rollback()
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
-        # closeDbConnection(db, cursorDb)
+        closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
         Logger.info("Closing database connection")
 

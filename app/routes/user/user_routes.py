@@ -149,7 +149,7 @@ def verify_otp():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     
     finally:
-        # closeDbConnection(db, cursorDb)
+        closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
         # Logger.debug("Database connection closed.")
         Logger.info("verify_otp function execution completed.")
@@ -284,7 +284,7 @@ def google_auth():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     
     finally:
-        # closeDbConnection(db, cursorDb)
+        closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
         Logger.info("Database connection closed")
         
@@ -376,7 +376,7 @@ def login_with_user_id():
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     
     finally:
-        # closeDbConnection(db, cursorDb)
+        closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
         Logger.success(f"************************** Processed Request : {request.endpoint} Success! **************************")
         # Logger.info("Database connection closed")
@@ -597,7 +597,7 @@ def get_user_details():
         db.rollback()
         return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
     finally:
-        # closeDbConnection(db, cursorDb)
+        closeDbConnection(db, cursorDb)
         # closePoolConnection(db)
         Logger.info("Database connection closed")
 
@@ -667,7 +667,7 @@ def update_matrimonial_profile():
     finally:
         Logger.info("Closing database connection.")
         # closePoolConnection(db)
-        # closeDbConnection(db, cursorDb)
+        closeDbConnection(db, cursorDb)
 
 
 
