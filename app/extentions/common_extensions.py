@@ -222,6 +222,7 @@ def check_request_authorized(request: Request):
         try:
             auth_token = auth_header.split(" ")[1]
         except IndexError:
+            Logger.error("Bearer token malformed")
             return json.dumps({"status": "failed", "message": "Bearer token malformed"}), 401
     else:
         auth_token = ''

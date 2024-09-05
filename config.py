@@ -27,7 +27,7 @@ class Config:
     GOOGLE_DRIVE_LOG_FILE = 'logs/google_drive.log'
     MATCH_MAKING_LOG_FILE = 'logs/match_making.log'
 
-    DB_HOST = os.getenv('DB_HOST')
+    DB_HOST = os.getenv('DB_HOST') if environment == 'local' else "localhost"
     # DB_USER = os.getenv('DB_USER')
     DB_USER = "maheshwari_matrimonialUser"
     DB_PASSWORD = os.getenv('DB_PASSWORD')

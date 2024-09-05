@@ -10,7 +10,7 @@ from app.database.db_pooling import MySQLConnector
 # cursorDb = None
 Router = Blueprint('Router', __name__)
 
-db = MySQLConnector()
+# conn = MySQLConnector()
 # _database = Database()
 # Router = Blueprint('Router', __name__, url_prefix='/v1')
 # db_pool: connector.connection.MySQLConnection = None

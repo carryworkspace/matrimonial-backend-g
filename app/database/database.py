@@ -22,6 +22,10 @@ class Database:
     def get_connection():
         global conn, cursor
         try:
+            if conn is not None:
+                cursor.execute("SELECT 1")
+                data = cursor.fetchall()
+            
             if conn is None or not conn.is_connected():
                 Logger.info("Reconnecting to the database...")
                 _db = Database()
@@ -30,6 +34,10 @@ class Database:
                 Logger.info("Database reconnected")
         except Exception as e:
             Logger.error(f"Reconnection failed: {e}")
+            _db = Database()
+            conn = _db.conn
+            cursor = _db.cursor 
+            Logger.info("Database reconnected")
         return conn, cursor
     
     def connect(self):

@@ -46,11 +46,13 @@ def authorize_request():
     except:
         pass 
     
-    if 'request_otp' not in request.endpoint and 'verify_otp' not in request.endpoint:  # Exclude the 'login' endpoint from authorization check
+    un_autorized_endpoints: list = ['login', 'register', 'request_otp', 'verify_otp', 'google_auth', 'login_with_user_id']
+    
+    if all(endpoint not in request.endpoint for endpoint in un_autorized_endpoints):  # Exclude the 'login' endpoint from authorization check
         Logger.info("Request authorization check")
-        # error_response = check_request_authorized(request)
-        # if error_response:
-            # return error_response
+        error_response = check_request_authorized(request)
+        if error_response:
+            return error_response
 
 # verify the otp
 @Router.route('/verify-otp', methods=['POST'])
