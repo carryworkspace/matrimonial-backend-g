@@ -16,7 +16,6 @@ from app.extentions.chatgpt import Chatgpt
 from app.extentions.pdf_extractor import PdfExtracter
 from app.extentions.common_extensions import users_otp
 from app.services.bio_data_extraction import GoogleDrive
-from app.extentions.base import info
 # from app.extentions.logger import Logger 
 import traceback
 from app.models.update_matrimonial_profile_model import UpdateMatrimonialProfileModel

@@ -73,7 +73,7 @@ def GetMatrimonialData(profileId: int):
 
 def GetAllQueuedMatchMaking():
     Logger.debug(f"Generating Sql query to get queued match making profiles")
-    return f"select ProfileId from MatchMakingQueued_M where matched = 0"
+    return f"select ProfileId from MatchMakingQueued_M where Matched = 0 and Error = 0"
 
 def GetQueuedMatchMakingById(profileId: int):
     Logger.debug(f"Generating Sql query to get queued match making profiles")
@@ -290,9 +290,9 @@ def UpdateMatchFlag(flag: int, profileId: int):
     Logger.debug("Generated SQL query for updating match flag")
     return f"update MatrimonialProfile_M set matching_flag = {flag} where ProfileId = {profileId}"
 
-def UpdateMatchQueuedFlag(matched_flag: int, profileId: int, processing_flag = 0):
+def UpdateMatchQueuedFlag(matched_flag: int, profileId: int, processing_flag = 0, error: int = 0):
     Logger.debug("Generated SQL query for updating match flag")
-    return f"update MatchMakingQueued_M set Matched = {matched_flag}, Processing = {processing_flag} where ProfileId = {profileId}"
+    return f"update MatchMakingQueued_M set Matched = {matched_flag}, Processing = {processing_flag}, Error = {error} where ProfileId = {profileId}"
 
 # added to excel 
 

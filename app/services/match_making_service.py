@@ -44,6 +44,7 @@ class MatchMakingService:
                 # # Process the results
                 if len(sorted_scores_df) == 0:
                     Logger.info("Matchmaking has been already completed for this Profile  or does not have opposite gender data.")
+                    cursorDb.execute(querys.UpdateMatchQueuedFlag(1, profileId))
                     # return json.dumps({"status": "success", "message": "Match making has been already completed for this Profile or does not have opposite gender data.",}), 200
                     continue
                 
@@ -52,6 +53,10 @@ class MatchMakingService:
                 for match in sorted_scores_df:
                     model = MatchProfileModel.fill_model(match)
                     model.mainProfileId = profileId
+                    
+                    if model.matchScore == 0:
+                        Logger.warning(f"Match score is 0, skipping this match for ProfileId: {model.profileId}")
+                        continue
                     
                     try:
                         
@@ -105,7 +110,8 @@ class MatchMakingService:
                         traceback.print_exc()
                         Logger.error(f"Unexpected Error trackback: {tb}")
                         print(tb)
-                        db.rollback()
+                        cursorDb.execute(querys.UpdateMatchQueuedFlag(1, profileId, 0, 1))
+                        db.commit()
                         
                 
         except mysql.connector.Error as e:
