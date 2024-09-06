@@ -315,7 +315,7 @@ def add_matrimonial_profile():
     try:
         Logger.info("Checking for missing keys in the input data.")
         # Check if all expected keys are present
-        exclude = ["bloodGroup", "motherTongue", "fatherName", "motherName", "institution", "yearOfPassing", "additionalQualification", "occupationCompany", "occupationLocation", "annualIncomeINR", "languagesKnown", "aboutMe"]
+        exclude = ["bloodGroup", "motherTongue", "fatherName", "motherName", "institution", "yearOfPassing", "additionalQualification", "occupationCompany", "occupationLocation", "annualIncomeINR", "languagesKnown", "aboutMe", "countryCode"]
         attributes = MatrimonialProfileModel().get_attribute_names(exclude=exclude)
         missing_keys = check_missing_keys(data, attributes)
         if missing_keys != None:
@@ -332,6 +332,13 @@ def add_matrimonial_profile():
             return json.dumps({"status": "failed", "message": "Profile Id Invalid. This profile id not exist"})
         
         Logger.info(f"Checking if matrimonial profile with profile ID {model.profileId} exists.")
+        
+        if is_null_or_empty(model.phoneNumber) == False:
+            try:
+                model.countryCode = model.phoneNumber.split("-")[0]
+                model.phoneNumber = model.phoneNumber.split("-")[1]
+            except:
+                model.countryCode = "+91"
         
         cursorDb.execute(querys.GetMatrimonialProfileByProfileId(model.profileId))
         matrimonial_profile = cursorDb.fetchall()

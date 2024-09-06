@@ -3,7 +3,7 @@
 class MatrimonialProfileModel:
     def __init__(self, profileId=None, name=None, gender=None, dob=None, time=None, heightCM=None,
                  weightKG=None, bloodGroup=None, complexion=None, motherTongue=None,
-                 maritalStatus=None, subCaste=None, gotra=None, address=None, phoneNumber=None, email=None, city=None, state=None,
+                 maritalStatus=None, subCaste=None, gotra=None, address=None, phoneNumber=None, countryCode = None, email=None, city=None, state=None,
                  country=None, zipCode=None, fatherName=None, motherName=None,
                  highestDegree=None, institution=None, yearOfPassing=None,
                  additionalQualification=None, occupation=None, occupationCompany=None,
@@ -25,6 +25,7 @@ class MatrimonialProfileModel:
         self.gotra = gotra
         self.address = address
         self.phoneNumber = phoneNumber
+        self.countryCode = countryCode
         self.email = email
         self.city = city
         self.state = state
@@ -64,6 +65,7 @@ class MatrimonialProfileModel:
             gotra=data.get('gotra'),
             address=data.get('address'),
             phoneNumber=data.get('phoneNumber'),
+            countryCode = data.get('countryCode'),
             email=data.get('email'),
             city=data.get('city'),
             state=data.get('state'),

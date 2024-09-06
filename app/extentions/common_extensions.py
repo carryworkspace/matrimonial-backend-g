@@ -91,6 +91,7 @@ def is_null_or_empty(text):
         return True
     if text == "Null":
         Logger.debug("Text is not null or empty")
+    if text == '0':
         return True
     return False
 

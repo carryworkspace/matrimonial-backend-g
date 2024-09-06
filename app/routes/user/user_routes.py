@@ -564,16 +564,20 @@ def get_user_details():
         marital_status = matrimonial_details['MaritalStatus']
         email = matrimonial_details['Email']
         education = matrimonial_details['HighestDegree']
+        countryCode = matrimonial_details['CountryCode']
         
         
         age = calculate_age(dob)
         
         # h 
         
-        if is_null_or_empty(phoneNumber):
+        if is_null_or_empty(phoneNumber) or len(phoneNumber) < 10:
             Logger.warning(f"Phone Number in users data not found: {phoneNumber}")
             phoneNumber: str = str(matrimonial_details['PhoneNumber'])
             Logger.warning(f"Phone Number IN Matrimonial: {matrimonial_details['PhoneNumber']}")
+            
+        if len(phoneNumber) > 9 and is_null_or_empty(countryCode) == False: 
+            phoneNumber = countryCode + phoneNumber
             
         db.commit()
         Logger.info(f"User details retrieved successfully for UserID: {userId}")
