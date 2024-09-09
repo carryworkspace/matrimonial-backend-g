@@ -176,8 +176,13 @@ def match_making_result():
             try:
                 otherProfileId = match_profile["OtherProfileId"]
                 gunn_score = match_profile["GunnMatchScore"]
-                notificationMsg = match_profile["NotificationMsg"].replace('"', "")
+                notificationMsg = match_profile["NotificationMsg"]
+                
+                if not is_null_or_empty(notificationMsg):
+                    notificationMsg.replace('"', "")
+                    
                 hobbies = match_profile["Hobbies"]
+                astroMsg = match_profile["AstroMsg"]
                 cursorDb.execute(querys.GetMatrimonialData(profileId=otherProfileId))
                 profile = cursorDb.fetchone()
                 
@@ -262,6 +267,7 @@ def match_making_result():
                 match_making_result["gunnScore"] = str(gunn_score)
                 match_making_result["notificationMsg"] = notificationMsg
                 match_making_result["hobbies"] = hobbies
+                match_making_result["astroMsg"] = astroMsg
                 
                 # fetch profile picure
                 cursorDb.execute(querys.GetProfilePictureById(otherProfileId))
@@ -284,8 +290,16 @@ def match_making_result():
                     profile_path = os.path.join(upload_folder, requestFileName)
                     
                     if not os.path.exists(profile_path):
-                        Logger.warning(f"Profile Picture not found for user ID: {otherProfileId}")
-                        match_making_result["picture"] = None
+                        Logger.warning(f"Profile Picture not found on server for user ID: {otherProfileId}")
+                        
+                        if gender.lower() == "male":
+                            requestFileName = Config.DEFAULT_PROFILE_PIC_MALE
+                        elif gender.lower() == "female":
+                            requestFileName = Config.DEFAULT_PROFILE_PIC_FEMALE
+                        else:
+                            requestFileName = Config.DEFAULT_PROFILE_PIC
+                    
+                    profile_path = os.path.join(upload_folder, requestFileName)
                                 
                     db.commit()
                     

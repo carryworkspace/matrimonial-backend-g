@@ -3,6 +3,7 @@ import time
 import traceback
 from app.extentions.common_extensions import split_list
 import math
+from app.extentions.logger import Logger
 
 
 class MultiProcess:
@@ -12,8 +13,13 @@ class MultiProcess:
     
     def process(self, func, main_preference, other_preferences, user_preference):
         split_count = math.floor(len(other_preferences)/ self.max_workers)
-        print("Split Count: ", split_count)
+        Logger.info(f"Split Count: {split_count}")
+        
+        if split_count == 0:
+            split_count = 1
         dividedList = split_list(other_preferences, split_count)
+        Logger.info(f"Divided List: {dividedList}")
+        
         try:
             with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
                 futures = [executor.submit(func, main_preference, other_preference, user_preference)for other_preference in dividedList]
@@ -21,18 +27,22 @@ class MultiProcess:
             
             # converting list of dict into dict
             combined = {}
+            gun_score = {}
+            match_and_values ={}
+            
             for d in results:
-                for k, v in d.items():
-                    combined[k] = v
+                combined.update(d[0])
+                gun_score.update(d[1])
+                match_and_values.update(d[2])
                     
-            return combined
+            return combined, gun_score, match_and_values
         except Exception as e:
             tb = traceback.extract_tb(e.__traceback__)
             filename, line_number, func_name, text = tb[-1]
             traceback.print_exc()
             
-            print(f"Error: {tb}")
-            print(f"Error occurred: {e}")
+            Logger(f"Error: {tb}")
+            Logger(f"Error occurred: {e}")
             return None
 
 # def worker(first, second, third):

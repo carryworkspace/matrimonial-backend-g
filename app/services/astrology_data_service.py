@@ -93,7 +93,7 @@ class AstroService:
         response = requests.get(f"{self.base_url}/v2/astrology/kundli-matching", params=params, headers=headers)
         json_response = response.json()
         Logger.info("Astrology data for male and female retrieved successfully.")
-        print(json_response)
+        Logger.info(json_response)
         return json_response 
 
     def get_coordinates(self,address: str):

@@ -47,7 +47,8 @@ class MatchmakingScore:
     def get_main_matrimonial_data(self, profile_id):
         conn, cursor = _database.get_connection()
         Logger.info("Starting get_user_preferences method")
-        query = f"SELECT * FROM MatrimonialProfile_M WHERE ProfileId = {profile_id} and matching_flag = 0"
+        # query = f"SELECT * FROM MatrimonialProfile_M WHERE ProfileId = {profile_id} and matching_flag = 0"
+        query = f"SELECT * FROM MatrimonialProfile_M WHERE ProfileId = {profile_id}"
         cursor.execute(query)
         Logger.debug(f"Executed SQL query: {query}")
         result = cursor.fetchall()
@@ -857,7 +858,7 @@ class MatchmakingScore:
             try:
                 # Occupation score
                 attr = "PreferredProfession"
-                    
+                count = 0
                 user_occupation: str = user_preference[attr]
                 other_occupation: str = other_profile_preference.get(attr)
                 
@@ -1106,12 +1107,12 @@ class MatchmakingScore:
             print("NO User Found")
             Logger.warning(f"No matrimonial found for user ID: {profile_id} or may be that already done matchmaking")
             
-            matchedMakingStatus = self.check_matchmaking_done_already(profile_id)
-            if len(matchedMakingStatus) != 0:
-                Logger.warning(f"Match making already competed for this profile id: {profile_id} updating status in queued.")
-                cursorDb.execute(querys.UpdateMatchQueuedFlag(matched_flag=1, profileId=profile_id, processing_flag=0))
-                db.commit()  
-            return pd.DataFrame(), {}, {}
+            # matchedMakingStatus = self.check_matchmaking_done_already(profile_id)
+            # if len(matchedMakingStatus) != 0:
+            #     Logger.warning(f"Match making already competed for this profile id: {profile_id} updating status in queued.")
+            #     cursorDb.execute(querys.UpdateMatchQueuedFlag(matched_flag=1, profileId=profile_id, processing_flag=0))
+            #     db.commit()  
+            # return pd.DataFrame(), {}, {}
         
         
         main_matrimonial = main_matrimonial[0]
@@ -1136,15 +1137,21 @@ class MatchmakingScore:
             return pd.DataFrame(), {}, {}
         
         # remove ids that has already match making done
-        alreadyMatched = self.get_already_matched_profileIds(profile_id)
-        print("Already Matched: ", alreadyMatched)
-        for alreadyMatchedId in alreadyMatched:
-            for item in other_matrimonial:
-                if item['ProfileId'] == alreadyMatchedId["OtherProfileId"]:
-                    Logger.warning(f"Removing already matched profile id: {alreadyMatchedId['OtherProfileId']}")
-                    other_matrimonial.remove(item)
+        try:
+            alreadyMatched = self.get_already_matched_profileIds(profile_id)
+            Logger.info(f"Already Matched: {alreadyMatched}")
+            
+            if len(alreadyMatched) > 0:
+                for alreadyMatchedId in alreadyMatched:
+                    for item in other_matrimonial:
+                        if item['ProfileId'] == alreadyMatchedId["OtherProfileId"]:
+                            Logger.warning(f"Removing already matched profile id: {alreadyMatchedId['OtherProfileId']}")
+                            other_matrimonial.remove(item)
+        except Exception as e:
+            Logger.error(f"Error while removing already matched profiles: {e}")
         # return
-        print("Total items:", len(other_matrimonial))
+        # print("Total items:", len(other_matrimonial))
+        Logger.info(f"Starting to calculate scores for profile_id: {profile_id} with matrimonial {other_matrimonial}")
         res = MultiProcess()
         
         # scores, gun_scores = res.process(self.calculate_scores,main_matrimonial, other_preferences, user_preferences)
@@ -1156,6 +1163,7 @@ class MatchmakingScore:
         preferences["OtherPreference"] = other_preferences
         
         scores, gun_scores, match_and_values = self.calculate_scores_matrimonial(main_matrimonial, other_matrimonial, preferences)
+        # scores, gun_scores, match_and_values = res.process(self.calculate_scores_matrimonial,main_matrimonial, other_matrimonial, preferences)
         
         for key, value in scores_preference.items():
             if scores.__contains__(key):

@@ -36,6 +36,7 @@ class MatchMakingService:
                 profileId = data["ProfileId"]
                 print(profileId)
                 
+                db, cursorDb = _database.get_connection()
                 cursorDb.execute(querys.UpdateMatchQueuedFlag(matched_flag=0, profileId=profileId, processing_flag=1))
                 db.commit()
                 sorted_scores_df, gun_scores, result_match_and_values = _matching.find_all_matches(profileId)
@@ -44,6 +45,7 @@ class MatchMakingService:
                 # # Process the results
                 if len(sorted_scores_df) == 0:
                     Logger.info("Matchmaking has been already completed for this Profile  or does not have opposite gender data.")
+                    db, cursorDb = _database.get_connection()
                     cursorDb.execute(querys.UpdateMatchQueuedFlag(1, profileId))
                     # return json.dumps({"status": "success", "message": "Match making has been already completed for this Profile or does not have opposite gender data.",}), 200
                     continue
@@ -87,22 +89,26 @@ class MatchMakingService:
                         
                             model.notificationMsg = notification_msg
                             model.hobbies = user_preference_profile["Hobbies"]
+                            model.astroMsg = result_match_and_values[model.profileId]["AstroMessage"]
                             
                             Logger.debug(f"Model data filled for match count: {len(model.__dict__.keys())} with score of : {model.matchScore} and MainProfile: {model.mainProfileId} and Other Profile: {model.profileId}")
                         
                         if model.matchScore == 0:
                             Logger.warning(f"Match score is 0, skipping this match for ProfileId: {model.profileId}")
                             continue
+                        
+                        db, cursorDb = _database.get_connection()
                         cursorDb.execute(querys.AddMatchedProfile(), model.__dict__)
                         db.commit()
                         Logger.debug("Executed query to add matched profile")
                         
-                        cursorDb.execute(querys.UpdateMatchFlag(1, profileId))
-                        cursorDb.execute(querys.UpdateMatchQueuedFlag(1, profileId))
+                        # cursorDb.execute(querys.UpdateMatchFlag(1, profileId))
+                        # cursorDb.execute(querys.UpdateMatchQueuedFlag(1, profileId))
                         Logger.debug("Executed query to update match flag")
                         
                         db.commit()
                         Logger.info("Match data inserted successfully")
+                        closeDbConnection(db, cursorDb)
                 
                     except Exception as e:
                         Logger.error(f"Unexpected Error: for {match} ERROR: {e}")
@@ -125,6 +131,10 @@ class MatchMakingService:
         
         except ValueError as ve:
             Logger.error(f"Value Error: {ve}")
+            tb = traceback.extract_tb(ve.__traceback__)
+            traceback.print_exc()
+            Logger.error(f"Unexpected Error trackback: {tb}")
+            print(tb)
             db.rollback()
             return json.dumps({"status": "failed", 'message': "Invalid data format"}), 400
         

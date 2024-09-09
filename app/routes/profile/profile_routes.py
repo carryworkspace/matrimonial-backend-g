@@ -320,6 +320,7 @@ def add_matrimonial_profile():
         missing_keys = check_missing_keys(data, attributes)
         if missing_keys != None:
             Logger.warning("Missing keys found in the input data")
+            Logger.warning(missing_keys)
             return missing_keys
         Logger.info("Filling the model with input data.")
         

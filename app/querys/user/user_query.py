@@ -73,7 +73,7 @@ def GetMatrimonialData(profileId: int):
 
 def GetAllQueuedMatchMaking():
     Logger.debug(f"Generating Sql query to get queued match making profiles")
-    return f"select ProfileId from MatchMakingQueued_M where Matched = 0 and Error = 0"
+    return f"select ProfileId from MatchMakingQueued_M where Error = 0"
 
 def GetQueuedMatchMakingById(profileId: int):
     Logger.debug(f"Generating Sql query to get queued match making profiles")
@@ -129,7 +129,8 @@ def AddMatchedProfile():
         IsExpired,
         MainProfileId,
         NotificationMsg,
-        Hobbies
+        Hobbies,
+        AstroMsg
     ) VALUES (
         %(profileId)s,
         %(matchScore)s,
@@ -137,7 +138,8 @@ def AddMatchedProfile():
         0,
         %(mainProfileId)s,
         %(notificationMsg)s,
-        %(hobbies)s
+        %(hobbies)s,
+        %(astroMsg)s
     );
     """
 
@@ -453,16 +455,18 @@ def UpdateMatrimonialUserDetails():
     Logger.debug("Generated SQL query for updating matromonial")
     return """UPDATE MatrimonialProfile_M SET
     Name = %(name)s,
+    Gender = %(gender)s,
+    Address = %(address)s,
+    Dob = %(dob)s,
+    SubCaste = %(subCaste)s,
+    MaritalStatus = %(maritalStatus)s,
+    HighestDegree = %(education)s,
     HeightCM = %(heightCM)s,
     WeightKG = %(weightKG)s,
-    SubCaste = %(subCaste)s,
-    Address = %(address)s,
     PhoneNumber = %(phoneNumber)s,
     Email = %(email)s,
-    MaritalStatus = %(maritalStatus)s,
-    Gender = %(gender)s,
-    Dob = %(dob)s,
-    HighestDegree = %(education)s
+    AboutMe = %(aboutMe)s,
+    CountryCode = %(countryCode)s
 WHERE
     ProfileId = %(profileId)s;"""
 

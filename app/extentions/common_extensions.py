@@ -482,6 +482,7 @@ def sendMessage(number: int, msg: str):
     pass
 
 def split_list(input_list, chunk_size):
+    Logger.info(f"Splitting list into chunks of size {chunk_size}")
     return [input_list[i:i + chunk_size] for i in range(0, len(input_list), chunk_size)]
 
 def calculate_age(dob, format = '%Y-%m-%d'):

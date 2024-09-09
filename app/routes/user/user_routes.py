@@ -636,6 +636,17 @@ def update_matrimonial_profile():
         
         Logger.info(f"Checking if matrimonial profile with profile ID {model.profileId} exists.")
         
+        if is_null_or_empty(model.phoneNumber) == False:
+            try:
+                model.countryCode = model.phoneNumber.split("-")[0]
+                model.phoneNumber = model.phoneNumber.split("-")[1]
+            except:
+                model.countryCode = "+91"
+
+        if model.phoneNumber.__contains__("+91"):
+            model.countryCode = "+91"
+            model.phoneNumber = model.phoneNumber.replace(model.countryCode, "")
+        
         cursorDb.execute(user_query.GetMatrimonialProfileByProfileId(model.profileId))
         matrimonial_profile = cursorDb.fetchall()
         if len(matrimonial_profile) != 0:
