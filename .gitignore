@@ -49,7 +49,6 @@ Thumbs.db
 *.wmv
 
 *.zip
-*.yml
 uploads
 __pycache__
 venv

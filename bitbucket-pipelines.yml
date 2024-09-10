@@ -1,0 +1,10 @@
+image: node:18
+
+pipelines:
+  default:
+    - step:
+        name: Deploy to Server
+        script:
+          - echo "Starting deployment to server..."
+          - apt-get update && apt-get install -y ssh
+          - ssh user@server-ip 'bash /home/maheshwari/complaint_backend/deploy.sh'
