@@ -16,6 +16,7 @@ from app.services.mapping_match_making_service import MappingMatchMakingService
 from datetime import datetime
 import traceback
 import shutil
+import math
 
 @Router.route('/matchmaking', methods=['GET'])
 @cross_origin(supports_credentials=True)
@@ -177,6 +178,10 @@ def match_making_result():
                 otherProfileId = match_profile["OtherProfileId"]
                 gunn_score = match_profile["GunnMatchScore"]
                 notificationMsg = match_profile["NotificationMsg"]
+                total_score = match_profile["MatchScore"]
+                percentage = get_score_percentage(total_score)
+                score_percentage = str(math.floor(percentage))+ "%"
+                
                 
                 if not is_null_or_empty(notificationMsg):
                     notificationMsg.replace('"', "")
@@ -268,6 +273,7 @@ def match_making_result():
                 match_making_result["notificationMsg"] = notificationMsg
                 match_making_result["hobbies"] = hobbies
                 match_making_result["astroMsg"] = astroMsg
+                match_making_result["percentage"] = score_percentage
                 
                 # fetch profile picure
                 cursorDb.execute(querys.GetProfilePictureById(otherProfileId))

@@ -83,11 +83,11 @@ def verify_otp():
 
     except Exception as ve:
         Logger.error(f"ValueError: {ve}")
-        return json.dumps({"status": "failed", 'message': "Error while parsing phone and otp"}), 400
+        return json.dumps({"status": "failed", 'message': "Error while parsing phone and otp"}), 500
 
     if is_null_or_empty(phone):
         Logger.info(f"Phone number not received: {phone}")
-        return json.dumps({"status": "failed", 'message': "phone number cannot be null or empty"}), 400
+        return json.dumps({"status": "failed", 'message': "phone number cannot be null or empty"}), 500
     
     # if is_null_or_empty(otp):
     #     return json.dumps({"status": "failed", 'message': "otp cannot be null or empty"}), 400
@@ -296,6 +296,11 @@ def login_with_user_id():
     Logger.warning(f"*********************** Start Processing For Endpoint: {request.endpoint} *********************** ")
     db, cursorDb = _database.get_connection()
     data = request.get_json()
+    token = None
+    username = None
+    userId = None
+    profileId = None
+    
     Logger.debug(f"Received JSON data: {data}")
     try:
         userIdError = validate_string_data(data, 'userId')
@@ -312,18 +317,18 @@ def login_with_user_id():
     except Exception as e:
         Logger.error(f"Error occurred during initial validation: {e}")
         try:
-            return json.dumps({"status": "failed", 'message': str(e)}), 400
+            return json.dumps({"status": "failed", 'message': str(e), "token": token, "username": username, "userId": userId, "profileId": profileId, "created": False}), 400
         except Exception as e:
             Logger.error(f"Error occured: {e}")
-            return json.dumps({"status": "failed", 'message': "some error ocurs. Please contact to developer"}), 400
+            return json.dumps({"status": "failed", 'message': "some error ocurs. Please contact to developer"}), 500
 
     if is_null_or_empty(userId):
         Logger.error("user id is null or empty")
-        return json.dumps({"status": "failed", 'message': "user id cannot be null or empty"}), 400
+        return json.dumps({"status": "failed", 'message': "user id cannot be null or empty", "token": token, "username": username, "userId": userId, "profileId": profileId, "created": False}), 400
     
     if is_null_or_empty(password):
         Logger.error("password is null or empty")
-        return json.dumps({"status": "failed", 'message': "password cannot be null or empty"}), 400
+        return json.dumps({"status": "failed", 'message': "password cannot be null or empty", "token": token, "username": username, "userId": userId, "profileId": profileId, "created": False}), 400
     
     try:
         
@@ -332,7 +337,7 @@ def login_with_user_id():
         
         if len(userDetails)==0:
             Logger.info(f"User not found for user id {userId}")
-            return json.dumps({'status': "failed", "message": "User not found"}), 400
+            return json.dumps({'status': "failed", "message": "User not found", "token": token, "username": username, "userId": userId, "profileId": profileId, "created": False}), 400
         
         
         cursorDb.execute(user_query.GetUserLoginDetailsByIdAndPassword(userId, password))
@@ -351,21 +356,21 @@ def login_with_user_id():
         
         else:
             Logger.info(f"User not found for user id {userId}")
-            return json.dumps({'status': "failed", "message": "Invalid user id or password"}), 400
+            return json.dumps({'status': "failed", "message": "Invalid user id or password", "token": token, "username": username, "userId": userId, "profileId": profileId, "created": False}), 400
         
     except mysql.connector.Error as e: 
             Logger.error(f"MySQL Error: {e}")
             db.rollback()
-            return json.dumps({"status": "failed", 'message': "some error occurs, in query execution"}), 400
+            return json.dumps({"status": "failed", 'message': "some error occurs, in query execution"}), 500
     
     except ValueError as ve:
         Logger.error(f"ValueError: {ve}")
         db.rollback()
-        return json.dumps({"status": "failed", 'message': "Invalid data format"}), 400
+        return json.dumps({"status": "failed", 'message': "Invalid data format"}), 500
     except KeyError as key:
         Logger.error(f"KeyError: {key}")
         db.rollback()
-        return json.dumps({"status": "failed", "message": "no otp found for this user. Please send otp first"})
+        return json.dumps({"status": "failed", "message": "key error"}), 500
     except Exception as e:
         tb = traceback.extract_tb(e.__traceback__)
         filename, line_number, func_name, text = tb[-1]
@@ -374,7 +379,7 @@ def login_with_user_id():
         print(f"Error: {e}")
         Logger.error(f"Unexpected Error: {e}")
         db.rollback()
-        return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 400
+        return json.dumps({"status": "failed", "message": "some error occurs, Please contact to developer"}), 500
     
     finally:
         closeDbConnection(db, cursorDb)

@@ -3,8 +3,11 @@ image: node:18
 pipelines:
   default:
     - step:
-        name: Deploy to Server
+        name: Build and Deploy
+        caches:
+          - node
         script:
-          - echo "Starting deployment to server..."
+          - echo "Starting deployment process..."
           - apt-get update && apt-get install -y ssh
-          - ssh user@server-ip 'bash /home/maheshwari/complaint_backend/deploy.sh'
+          - echo "Connecting to the server and running the deployment script..."
+          - ssh -o StrictHostKeyChecking=no maheshwari@162.240.227.210 'bash matrimonial_deploy.sh'

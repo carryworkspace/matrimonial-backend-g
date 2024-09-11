@@ -514,6 +514,11 @@ def count_matching_hobbies(field1, field2):
     # Return the number of matched hobbies
     return len(common_hobbies), list(common_hobbies)
 
+def get_score_percentage(score):
+    total_points = 150
+    percentage = (score / total_points) * 100
+    return percentage
+
 def remove_duplicates(input_string):
     # Split the string into a list of words
     words = input_string.split(",")
